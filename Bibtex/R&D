@@ -1,0 +1,70 @@
+% This file was created with JabRef 2.10.
+% Encoding: UTF-8
+
+
+@Article{chachada2014environmental,
+  Title                    = {Environmental sound recognition: A survey},
+  Author                   = {Chachada, Sachin and Kuo, C-C Jay},
+  Journal                  = {APSIPA Transactions on Signal and Information Processing},
+  Year                     = {2014},
+  Note                     = {Number of citation - 130},
+  Volume                   = {3},
+
+  Abstract                 = {Although research in audio recognition has traditionally focused on speech and music signals, the problem of environmental sound recognition (ESR) has received more attention in recent years. Research on ESR has significantly increased in the past
+decade. Recent work has focused on the appraisal of non-stationary aspects of environmental sounds, and several new features predicated on non-stationary characteristics have been proposed. These features strive to maximize their information content
+pertaining to signal’s temporal and spectral characteristics. Furthermore, sequential learning methods have been used to capture the long-term variation of environmental sounds. In this survey, we will offer a qualitative and elucidatory survey on recent
+developments. It includes four parts: (i) basic environmental sound-processing schemes, (ii) stationary ESR techniques, (iii) non-stationary ESR techniques, and (iv) performance comparison of selected methods. Finally, concluding remarks and future
+research and development trends in the ESR field will be given.},
+  Owner                    = {manoj},
+  Publisher                = {Cambridge University Press},
+  Timestamp                = {2020.04.12}
+}
+
+@InProceedings{piczak2015environmental,
+  Title                    = {Environmental sound classification with convolutional neural networks},
+  Author                   = {Piczak, Karol J},
+  Booktitle                = {2015 IEEE 25th International Workshop on Machine Learning for Signal Processing (MLSP)},
+  Year                     = {2015},
+  Note                     = {Number of citation - 411},
+  Organization             = {IEEE},
+  Pages                    = {1--6},
+
+  Abstract                 = {This paper evaluates the potential of convolutional neural networks in classifying short audio clips of environmental sounds. A deep model consisting of 2 convolutional layers with max-pooling and 2 fully connected layers is trained on a low level representation of audio data (segmented spectrograms) with deltas. The accuracy of the network is evaluated on 3 public datasets of environmental and urban recordings.
+The model outperforms baseline implementations relying on mel-frequency cepstral coefficients and achieves results comparable to other state-of-the-art approaches.},
+  Owner                    = {manoj},
+  Timestamp                = {2020.04.12}
+}
+
+@Article{salamon2017deep,
+  Title                    = {Deep convolutional neural networks and data augmentation for environmental sound classification},
+  Author                   = {Salamon, Justin and Bello, Juan Pablo},
+  Journal                  = {IEEE Signal Processing Letters},
+  Year                     = {2017},
+  Note                     = {citation - 538},
+  Number                   = {3},
+  Pages                    = {279--283},
+  Volume                   = {24},
+
+  Abstract                 = {The ability of deep convolutional neural networks (CNNs) to learn discriminative spectro-temporal patterns makes them well suited to environmental sound classification. However, the relative scarcity of labeled data has impeded the exploitation of this family of high-capacity models. This study has two primary contributions: first, we propose a deep CNN architecture for environmental sound classification. Second, we propose the use of audio data augmentation for overcoming the problem of data scarcity and explore the influence of different augmentations on the performance of the proposed CNN architecture. Combined with data augmentation, the proposed model produces state-of-theart results for environmental sound classification. We show that the improved performance stems from the combination of a deep, highcapacity model and an augmented training set: this combination outperforms both the proposed CNN without augmentation and a “shallow” dictionary learning model with augmentation. Finally, we examine the influence of each augmentation on the model’s classification accuracy for each class, and observe that the accuracy for each class is influenced differently by each augmentation, suggesting that the performance of the model could be improved further by applying class-conditional data augmentation.},
+  Owner                    = {manoj},
+  Publisher                = {IEEE},
+  Timestamp                = {2020.04.18}
+}
+
+@TechReport{sprengel2016audio,
+  Title                    = {Audio based bird species identification using deep learning techniques},
+  Author                   = {Sprengel, Elias and Jaggi, Martin and Kilcher, Yannic and Hofmann, Thomas},
+  Year                     = {2016},
+  Note                     = {Citation -55},
+
+  Abstract                 = {In this paper we present a new audio classification method for bird species identification. Whereas most approaches apply nearest neighbour matching [6] or decision trees [8] using extracted templates for each bird species, ours draws upon techniques from speech recognition and recent advances in the domain of deep learning. With novel preprocessing and data augmentation methods, we train a convolutional neural network on the biggest publicly available dataset [5]. Our network architecture achieves a mean average precision score of 0.686 when predicting the main species of each sound file and scores 0.555 when background species are used as additional prediction targets. As this performance
+surpasses current state of the art results, our approach won this years international BirdCLEF 2016 Recognition Challenge [3,4,1].},
+  Owner                    = {manoj},
+  Timestamp                = {2020.04.18}
+}
+
+@Article{,
+  Owner                    = {manoj},
+  Timestamp                = {2020.04.18}
+}
+

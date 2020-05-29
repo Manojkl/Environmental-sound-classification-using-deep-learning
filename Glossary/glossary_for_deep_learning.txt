@@ -1,0 +1,44 @@
+1. Embeddings
+
+In context of NLP embedding means mapping the word to a number and represent the entire sentence as a vector.
+In context of neural network, embeddings are low dimensional. For ex, image pixel value is represenetd as a number.
+
+2. Stides
+
+3. max pooling
+
+4. convolutional layer
+
+5. rectified linear activation
+
+6. Receptive field
+
+7. Quotidian sounds 
+- Sound that we encounter in everyday life.
+
+8. Environmental sound classification
+- It refers to the classification of the sound that we encounter in everyday life
+
+9. FLOPS
+- Floting point operation per seconds
+
+10. Inception model
+
+11. Parameters in neural network
+
+12. convolution
+
+13. Linear dependence and independence
+
+Intuitively vectors being linearly independent means they represent independent directions in your vector spaces, while linearly dependent vectors means they don't. So for example if you have a set of vector {x1,...,x5} and you can walk some distance in the x1 direction, then a difference distance in x2, then again in the direction of x3. If in the end you are back where you started then the vectors are linearly dependent (notice that I did not use all the vectors).
+
+This is the intuition behind the notion and you can make it into a definition because in the above example if we start at 0 then we walk ai in the xi direction, then the above paragraph says that a1x1+a2x2+a3x3=0.
+
+In the theory of vector spaces, a set of vectors is said to be linearly dependent if at least one of the vectors in the set can be defined as a linear combination of the others; if no vector in the set can be written in this way, then the vectors are said to be linearly independent.
+
+For example consider going in north direction for 1m(say x1) from the origin. Then you get a vector. Now you can reach x1 by starting from origin and going with 45 degree from north and again goin into west you will reach x1. This will give us two vectors. So this condition is true then it is called as linear dependent.
+
+14. Stationary and non stationary sound
+
+-The wind provides stationary noise: it’s mean and variance does not appreciably change over the course of the day. Bug noises, bird chirps, traffic, etc. are nonstationary: they are in fact cyclical and the mean and variance can be modeled using a Fourier expansion. Bugs get noticeably louder at night; car noise gets louder around 7am-9am and 4pm-6pm, etc. If you *remove* these types of sound, you might get something close to stationary. Often, its the nonstationary things that are interesting. 
+

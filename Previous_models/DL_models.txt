@@ -1,0 +1,17 @@
+[Serial numebr] [Proposed model] [Year of publication] [Number of citation]
+1. GoogleNet 
+2. WaveNet
+3. FaceNet
+4. AlexNet
+5. VGGNet
+6. DSCNN
+7. End-to-end ESC system
+8. LMCNet
+9. MCNet
+10. TSCNN-DS
+11. Piczak
+12. Tokozume
+13. ZhanX
+14. Li
+15. CLEVRER (Collison events for video representation and reasoning)
+16. 
