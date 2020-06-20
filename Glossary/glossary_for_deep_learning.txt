@@ -42,3 +42,16 @@ For example consider going in north direction for 1m(say x1) from the origin. Th
 
 -The wind provides stationary noise: it’s mean and variance does not appreciably change over the course of the day. Bug noises, bird chirps, traffic, etc. are nonstationary: they are in fact cyclical and the mean and variance can be modeled using a Fourier expansion. Bugs get noticeably louder at night; car noise gets louder around 7am-9am and 4pm-6pm, etc. If you *remove* these types of sound, you might get something close to stationary. Often, its the nonstationary things that are interesting. 
 
+15. Matrix factorization
+
+- Matrix factorization is a class of collaborative filtering algorithms used in the recommender system. It works by decomposing the user-item interaction matrix into the product of two lower dimensionality rectangular matrices.
+
+16.  Spectrogram
+
+17. Temporal
+ 
+18. Spectro-temporal features
+
+19. Handcrafted features
+
+20. Proection coefficients
