@@ -1,0 +1,1677 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<title>JabRef references</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script type="text/javascript">
+<!--
+// QuickSearch script for JabRef HTML export 
+// Version: 3.0
+//
+// Copyright (c) 2006-2011, Mark Schenk
+//
+// This software is distributed under a Creative Commons Attribution 3.0 License
+// http://creativecommons.org/licenses/by/3.0/
+//
+// Features:
+// - intuitive find-as-you-type searching
+//    ~ case insensitive
+//    ~ ignore diacritics (optional)
+//
+// - search with/without Regular Expressions
+// - match BibTeX key
+//
+
+// Search settings
+var searchAbstract = true;	// search in abstract
+var searchComment = true;	// search in comment
+
+var noSquiggles = true; 	// ignore diacritics when searching
+var searchRegExp = false; 	// enable RegExp searches
+
+
+if (window.addEventListener) {
+	window.addEventListener("load",initSearch,false); }
+else if (window.attachEvent) {
+	window.attachEvent("onload", initSearch); }
+
+function initSearch() {
+	// check for quick search table and searchfield
+	if (!document.getElementById('qs_table')||!document.getElementById('quicksearch')) { return; }
+
+	// load all the rows and sort into arrays
+	loadTableData();
+	
+	//find the query field
+	qsfield = document.getElementById('qs_field');
+
+	// previous search term; used for speed optimisation
+	prevSearch = '';
+
+	//find statistics location
+	stats = document.getElementById('stat');
+	setStatistics(-1);
+	
+	// set up preferences
+	initPreferences();
+
+	// shows the searchfield
+	document.getElementById('quicksearch').style.display = 'block';
+	document.getElementById('qs_field').onkeyup = quickSearch;
+}
+
+function loadTableData() {
+	// find table and appropriate rows
+	searchTable = document.getElementById('qs_table');
+	var allRows = searchTable.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+	// split all rows into entryRows and infoRows (e.g. abstract, comment, bibtex)
+	entryRows = new Array(); infoRows = new Array(); absRows = new Array(); revRows = new Array();
+
+	// get data from each row
+	entryRowsData = new Array(); absRowsData = new Array(); revRowsData = new Array(); 
+	
+	BibTeXKeys = new Array();
+	
+	for (var i=0, k=0, j=0; i<allRows.length;i++) {
+		if (allRows[i].className.match(/entry/)) {
+			entryRows[j] = allRows[i];
+			entryRowsData[j] = stripDiacritics(getTextContent(allRows[i]));
+			allRows[i].id ? BibTeXKeys[j] = allRows[i].id : allRows[i].id = 'autokey_'+j;
+			j ++;
+		} else {
+			infoRows[k++] = allRows[i];
+			// check for abstract/comment
+			if (allRows[i].className.match(/abstract/)) {
+				absRows.push(allRows[i]);
+				absRowsData[j-1] = stripDiacritics(getTextContent(allRows[i]));
+			} else if (allRows[i].className.match(/comment/)) {
+				revRows.push(allRows[i]);
+				revRowsData[j-1] = stripDiacritics(getTextContent(allRows[i]));
+			}
+		}
+	}
+	//number of entries and rows
+	numEntries = entryRows.length;
+	numInfo = infoRows.length;
+	numAbs = absRows.length;
+	numRev = revRows.length;
+}
+
+function quickSearch(){
+	
+	tInput = qsfield;
+
+	if (tInput.value.length == 0) {
+		showAll();
+		setStatistics(-1);
+		qsfield.className = '';
+		return;
+	} else {
+		t = stripDiacritics(tInput.value);
+
+		if(!searchRegExp) { t = escapeRegExp(t); }
+			
+		// only search for valid RegExp
+		try {
+			textRegExp = new RegExp(t,"i");
+			closeAllInfo();
+			qsfield.className = '';
+		}
+			catch(err) {
+			prevSearch = tInput.value;
+			qsfield.className = 'invalidsearch';
+			return;
+		}
+	}
+	
+	// count number of hits
+	var hits = 0;
+
+	// start looping through all entry rows
+	for (var i = 0; cRow = entryRows[i]; i++){
+
+		// only show search the cells if it isn't already hidden OR if the search term is getting shorter, then search all
+		if(cRow.className.indexOf('noshow')==-1 || tInput.value.length <= prevSearch.length){
+			var found = false; 
+
+			if (entryRowsData[i].search(textRegExp) != -1 || BibTeXKeys[i].search(textRegExp) != -1){ 
+				found = true;
+			} else {
+				if(searchAbstract && absRowsData[i]!=undefined) {
+					if (absRowsData[i].search(textRegExp) != -1){ found=true; } 
+				}
+				if(searchComment && revRowsData[i]!=undefined) {
+					if (revRowsData[i].search(textRegExp) != -1){ found=true; } 
+				}
+			}
+			
+			if (found){
+				cRow.className = 'entry show';
+				hits++;
+			} else {
+				cRow.className = 'entry noshow';
+			}
+		}
+	}
+
+	// update statistics
+	setStatistics(hits)
+	
+	// set previous search value
+	prevSearch = tInput.value;
+}
+
+
+// Strip Diacritics from text
+// http://stackoverflow.com/questions/990904/javascript-remove-accents-in-strings
+
+// String containing replacement characters for stripping accents 
+var stripstring = 
+    'AAAAAAACEEEEIIII'+
+    'DNOOOOO.OUUUUY..'+
+    'aaaaaaaceeeeiiii'+
+    'dnooooo.ouuuuy.y'+
+    'AaAaAaCcCcCcCcDd'+
+    'DdEeEeEeEeEeGgGg'+
+    'GgGgHhHhIiIiIiIi'+
+    'IiIiJjKkkLlLlLlL'+
+    'lJlNnNnNnnNnOoOo'+
+    'OoOoRrRrRrSsSsSs'+
+    'SsTtTtTtUuUuUuUu'+
+    'UuUuWwYyYZzZzZz.';
+
+function stripDiacritics(str){
+
+    if(noSquiggles==false){
+        return str;
+    }
+
+    var answer='';
+    for(var i=0;i<str.length;i++){
+        var ch=str[i];
+        var chindex=ch.charCodeAt(0)-192;   // Index of character code in the strip string
+        if(chindex>=0 && chindex<stripstring.length){
+            // Character is within our table, so we can strip the accent...
+            var outch=stripstring.charAt(chindex);
+            // ...unless it was shown as a '.'
+            if(outch!='.')ch=outch;
+        }
+        answer+=ch;
+    }
+    return answer;
+}
+
+// http://stackoverflow.com/questions/3446170/escape-string-for-use-in-javascript-regex
+// NOTE: must escape every \ in the export code because of the JabRef Export...
+function escapeRegExp(str) {
+  return str.replace(/[-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+}
+
+function toggleInfo(articleid,info) {
+
+	var entry = document.getElementById(articleid);
+	var abs = document.getElementById('abs_'+articleid);
+	var rev = document.getElementById('rev_'+articleid);
+	var bib = document.getElementById('bib_'+articleid);
+	
+	if (abs && info == 'abstract') {
+		abs.className.indexOf('noshow') == -1?abs.className = 'abstract noshow':abs.className = 'abstract show';
+	} else if (rev && info == 'comment') {
+		rev.className.indexOf('noshow') == -1?rev.className = 'comment noshow':rev.className = 'comment show';
+	} else if (bib && info == 'bibtex') {
+		bib.className.indexOf('noshow') == -1?bib.className = 'bibtex noshow':bib.className = 'bibtex show';
+	} else { 
+		return;
+	}
+
+	// check if one or the other is available
+	var revshow; var absshow; var bibshow;
+	(abs && abs.className.indexOf('noshow') == -1)? absshow = true: absshow = false;
+	(rev && rev.className.indexOf('noshow') == -1)? revshow = true: revshow = false;	
+	(bib && bib.className.indexOf('noshow') == -1)? bibshow = true: bibshow = false;
+	
+	// highlight original entry
+	if(entry) {
+		if (revshow || absshow || bibshow) {
+		entry.className = 'entry highlight show';
+		} else {
+		entry.className = 'entry show';
+		}
+	}
+	
+	// When there's a combination of abstract/comment/bibtex showing, need to add class for correct styling
+	if(absshow) {
+		(revshow||bibshow)?abs.className = 'abstract nextshow':abs.className = 'abstract';
+	} 
+	if (revshow) {
+		bibshow?rev.className = 'comment nextshow': rev.className = 'comment';
+	}	
+	
+}
+
+function setStatistics (hits) {
+	if(hits < 0) { hits=numEntries; }
+	if(stats) { stats.firstChild.data = hits + '/' + numEntries}
+}
+
+function getTextContent(node) {
+	// Function written by Arve Bersvendsen
+	// http://www.virtuelvis.com
+	
+	if (node.nodeType == 3) {
+	return node.nodeValue;
+	} // text node
+	if (node.nodeType == 1 && node.className != "infolinks") { // element node
+	var text = [];
+	for (var chld = node.firstChild;chld;chld=chld.nextSibling) {
+		text.push(getTextContent(chld));
+	}
+	return text.join("");
+	} return ""; // some other node, won't contain text nodes.
+}
+
+function showAll(){
+	closeAllInfo();
+	for (var i = 0; i < numEntries; i++){ entryRows[i].className = 'entry show'; }
+}
+
+function closeAllInfo(){
+	for (var i=0; i < numInfo; i++){
+		if (infoRows[i].className.indexOf('noshow') ==-1) {
+			infoRows[i].className = infoRows[i].className + ' noshow';
+		}
+	}
+}
+
+function clearQS() {
+	qsfield.value = '';
+	showAll();
+}
+
+function redoQS(){
+	showAll();
+	quickSearch(qsfield);
+}
+
+function updateSetting(obj){
+	var option = obj.id;
+	var checked = obj.value;
+
+	switch(option)
+	 {
+	 case "opt_searchAbs":
+	   searchAbstract=!searchAbstract;
+	   redoQS();
+	   break;
+	 case "opt_searchRev":
+	   searchComment=!searchComment;
+	   redoQS();
+	   break;
+	 case "opt_useRegExp":
+	   searchRegExp=!searchRegExp;
+	   redoQS();
+	   break;
+	 case "opt_noAccents":
+	   noSquiggles=!noSquiggles;
+	   loadTableData();
+	   redoQS();
+	   break;
+	 }
+}
+
+function initPreferences(){
+	if(searchAbstract){document.getElementById("opt_searchAbs").checked = true;}
+	if(searchComment){document.getElementById("opt_searchRev").checked = true;}
+	if(noSquiggles){document.getElementById("opt_noAccents").checked = true;}
+	if(searchRegExp){document.getElementById("opt_useRegExp").checked = true;}
+	
+	if(numAbs==0) {document.getElementById("opt_searchAbs").parentNode.style.display = 'none';}
+	if(numRev==0) {document.getElementById("opt_searchRev").parentNode.style.display = 'none';}
+}
+
+function toggleSettings(){
+	var togglebutton = document.getElementById('showsettings');
+	var settings = document.getElementById('settings');
+	
+	if(settings.className == "hidden"){
+		settings.className = "show";
+		togglebutton.innerText = "close settings";
+		togglebutton.textContent = "close settings";
+	}else{
+		settings.className = "hidden";
+		togglebutton.innerText = "settings...";		
+		togglebutton.textContent = "settings...";
+	}
+}
+
+-->
+</script>
+<style type="text/css">
+body { background-color: white; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.2; padding: 1em; color: #2E2E2E; margin: auto 2em; }
+
+form#quicksearch { width: auto; border-style: solid; border-color: gray; border-width: 1px 0px; padding: 0.7em 0.5em; display:none; position:relative; }
+span#searchstat {padding-left: 1em;}
+
+div#settings { margin-top:0.7em; /* border-bottom: 1px transparent solid; background-color: #efefef; border: 1px grey solid; */ }
+div#settings ul {margin: 0; padding: 0; }
+div#settings li {margin: 0; padding: 0 1em 0 0; display: inline; list-style: none; }
+div#settings li + li { border-left: 2px #efefef solid; padding-left: 0.5em;}
+div#settings input { margin-bottom: 0px;}
+
+div#settings.hidden {display:none;}
+
+#showsettings { border: 1px grey solid; padding: 0 0.5em; float:right; line-height: 1.6em; text-align: right; }
+#showsettings:hover { cursor: pointer; }
+
+.invalidsearch { background-color: red; }
+input[type="button"] { background-color: #efefef; border: 1px #2E2E2E solid;}
+
+table { width: 100%; empty-cells: show; border-spacing: 0em 0.2em; margin: 1em 0em; border-style: none; }
+th, td { border: 1px gray solid; border-width: 1px 1px; padding: 0.5em; vertical-align: top; text-align: left; }
+th { background-color: #efefef; }
+td + td, th + th { border-left: none; }
+
+td a { color: navy; text-decoration: none; }
+td a:hover  { text-decoration: underline; }
+
+tr.noshow { display: none;}
+tr.highlight td { background-color: #EFEFEF; border-top: 2px #2E2E2E solid; font-weight: bold; }
+tr.abstract td, tr.comment td, tr.bibtex td { background-color: #EFEFEF; text-align: justify; border-bottom: 2px #2E2E2E solid; }
+tr.nextshow td { border-bottom: 1px gray solid; }
+
+tr.bibtex pre { width: 100%; overflow: auto; white-space: pre-wrap;}
+p.infolinks { margin: 0.3em 0em 0em 0em; padding: 0px; }
+
+@media print {
+	p.infolinks, #qs_settings, #quicksearch, t.bibtex { display: none !important; }
+	tr { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+
+<form action="" id="quicksearch">
+<input type="text" id="qs_field" autocomplete="off" placeholder="Type to search..." /> <input type="button" onclick="clearQS()" value="clear" />
+<span id="searchstat">Matching entries: <span id="stat">0</span></span>
+<div id="showsettings" onclick="toggleSettings()">settings...</div>
+<div id="settings" class="hidden">
+<ul>
+<li><input type="checkbox" class="search_setting" id="opt_searchAbs" onchange="updateSetting(this)"><label for="opt_searchAbs"> include abstract</label></li>
+<li><input type="checkbox" class="search_setting" id="opt_searchRev" onchange="updateSetting(this)"><label for="opt_searchRev"> include comment</label></li>
+<li><input type="checkbox" class="search_setting" id="opt_useRegExp" onchange="updateSetting(this)"><label for="opt_useRegExp"> use RegExp</label></li>
+<li><input type="checkbox" class="search_setting" id="opt_noAccents" onchange="updateSetting(this)"><label for="opt_noAccents"> ignore accents</label></li>
+</ul>
+</div>
+</form>
+<table id="qs_table" border="1">
+<thead><tr><th width="20%">Author</th><th width="30%">Title</th><th width="5%">Year</th><th width="30%">Journal/Proceedings</th><th width="10%">Reftype</th><th width="5%">DOI/URL</th></tr></thead>
+<tbody><tr id="abdoli2019end" class="entry">
+	<td>Abdoli, S., Cardinal, P. and Koerich, A.L.</td>
+	<td>End-to-end environmental sound classification using a 1D convolutional neural network <p class="infolinks">[<a href="javascript:toggleInfo('abdoli2019end','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('abdoli2019end','comment')">Comment</a>] [<a href="javascript:toggleInfo('abdoli2019end','bibtex')">BibTeX</a>]</p></td>
+	<td>2019</td>
+	<td>Expert Systems with Applications<br/>Vol. 136, pp. 252-263&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://arxiv.org/pdf/1904.08990">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_abdoli2019end" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: In this paper, we present an end-to-end approach for environmental sound classification based on a 1D Convolution Neural Network (CNN) that learns a representation directly from the audio signal. Several convolutional layers are used to capture the signal’s fine time structure and learn diverse filters that are relevant to the classification task. The proposed approach can deal with audio signals of any length as it splits the signal into overlapped frames using a sliding window. Different architectures considering several input sizes are evaluated, including the initialization of the first convolutional layer with a Gammatone filterbank that models the human auditory filter response in the cochlea. The performance of the proposed end-to-end approach in classifying environmental sounds was assessed on the UrbanSound8k dataset and the experimental results have shown that it achieves 89% of mean accuracy. Therefore, the proposed approach outperforms most of the state-of-the-art approaches that use handcrafted features or 2D representations as input. Moreover, the proposed approach outperforms all approaches that use raw audio signal as input to the classifier. Furthermore, the proposed approach has a small number of parameters compared to other architectures found in the literature, which reduces the amount of data required for training.</td>
+</tr>
+<tr id="rev_abdoli2019end" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: End to end ESC using 1D CNN. CItations - 29</td>
+</tr>
+<tr id="bib_abdoli2019end" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{abdoli2019end,
+  author = {Abdoli, Sajjad and Cardinal, Patrick and Koerich, Alessandro Lameiras},
+  title = {End-to-end environmental sound classification using a 1D convolutional neural network},
+  journal = {Expert Systems with Applications},
+  publisher = {Elsevier},
+  year = {2019},
+  volume = {136},
+  pages = {252--263},
+  url = {https://arxiv.org/pdf/1904.08990}
+}
+</pre></td>
+</tr>
+<tr id="agrawal2017novel" class="entry">
+	<td>Agrawal, D.M., Sailor, H.B., Soni, M.H. and Patil, H.A.</td>
+	<td>Novel TEO-based Gammatone features for environmental sound classification <p class="infolinks">[<a href="javascript:toggleInfo('agrawal2017novel','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('agrawal2017novel','comment')">Comment</a>] [<a href="javascript:toggleInfo('agrawal2017novel','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>2017 25th European Signal Processing Conference (EUSIPCO), pp. 1809-1813&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://www.researchgate.net/profile/Dharmesh_Agrawal/publication/320823984_Novel_TEO-based_Gammatone_features_for_environmental_sound_classification/links/5a084be8a6fdcc65eab4fd1e/Novel-TEO-based-Gammatone-features-for-environmental-sound-classification.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_agrawal2017novel" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: In this paper, we propose to use modified Gammatone filterbank with Teager Energy Operator (TEO) for environmental sound classification (ESC) task. TEO can track energy as a function of both amplitude and frequency of an audio signal. TEO is better for capturing energy variations in the signal that is produced by a real physical system, such as, environmental sounds that contain amplitude and frequency modulations. In proposed feature set, we have used Gammatone filterbank since it represents characteristics of human auditory processing. Here, we have used two classifiers, namely, Gaussian Mixture Model (GMM) using cepstral features, and Convolutional Neural Network (CNN) using spectral features. We performed experiments on two datasets, namely, ESC-50, and UrbanSound8K. We compared TEO-based coefficients with Mel filter cepstral coefficients (MFCC) and Gammatone cepstral coefficients (GTCC), in which GTCC used mean square energy. Using GMM, the proposed TEO-based Gammatone Cepstral Coefficients (TEO-GTCC), and its score-level fusion with MFCC gave absolute improvement of 0.45 %, and 3.85 % in classification accuracy over MFCC on ESC-50 dataset. Similarly, on UrbanSound8K dataset the proposed TEO-GTCC, and its score-level fusion with GTCC gave absolute improvement of 1.40 %, and 2.44 % in classification accuracy over MFCC. Using CNN, the score-level fusion of Gammatone spectral coefficient (GTSC) and the proposed TEO-based Gammatone spectral coefficients (TEO-GTSC) gave absolute improvement of 14.10 %, and 14.52 % in classification accuracy over Mel filterbank energies (FBE) on ESC-50 and UrbanSond8K datasets, respectively. This shows that proposed TEO-based Gammatone features contain complementary information which is helpful in ESC task.</td>
+</tr>
+<tr id="rev_agrawal2017novel" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Gammatone features for ESC. Citations - 16</td>
+</tr>
+<tr id="bib_agrawal2017novel" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{agrawal2017novel,
+  author = {Agrawal, Dharmesh M and Sailor, Hardik B and Soni, Meet H and Patil, Hemant A},
+  title = {Novel TEO-based Gammatone features for environmental sound classification},
+  booktitle = {2017 25th European Signal Processing Conference (EUSIPCO)},
+  year = {2017},
+  pages = {1809--1813},
+  url = {https://www.researchgate.net/profile/Dharmesh_Agrawal/publication/320823984_Novel_TEO-based_Gammatone_features_for_environmental_sound_classification/links/5a084be8a6fdcc65eab4fd1e/Novel-TEO-based-Gammatone-features-for-environmental-sound-classification.pdf}
+}
+</pre></td>
+</tr>
+<tr id="allen1977short" class="entry">
+	<td>Allen, J.</td>
+	<td>Short term spectral analysis, synthesis, and modification by discrete Fourier transform <p class="infolinks">[<a href="javascript:toggleInfo('allen1977short','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('allen1977short','comment')">Comment</a>] [<a href="javascript:toggleInfo('allen1977short','bibtex')">BibTeX</a>]</p></td>
+	<td>1977</td>
+	<td>IEEE Transactions on Acoustics, Speech, and Signal Processing<br/>Vol. 25(3), pp. 235-238&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://courses.engr.illinois.edu/ece420/sp2017/STFT.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_allen1977short" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: -A theory of short term spectral analysis, synthesis, and modification is presented with an attempt at pointing out certain practical and theoretical questions. The methods discussed here are useful in designing filter banks when the filter bank outputs are to be used for synthesis after multiplicative modifications are made to the spectrum.</td>
+</tr>
+<tr id="rev_allen1977short" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: STFT. CItation - 1065</td>
+</tr>
+<tr id="bib_allen1977short" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{allen1977short,
+  author = {Allen, Jonathan},
+  title = {Short term spectral analysis, synthesis, and modification by discrete Fourier transform},
+  journal = {IEEE Transactions on Acoustics, Speech, and Signal Processing},
+  publisher = {IEEE},
+  year = {1977},
+  volume = {25},
+  number = {3},
+  pages = {235--238},
+  url = {https://courses.engr.illinois.edu/ece420/sp2017/STFT.pdf}
+}
+</pre></td>
+</tr>
+<tr id="boddapati2017classifying" class="entry">
+	<td>Boddapati, V., Petef, A., Rasmusson, J. and Lundberg, L.</td>
+	<td>Classifying environmental sounds using image recognition networks <p class="infolinks">[<a href="javascript:toggleInfo('boddapati2017classifying','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('boddapati2017classifying','comment')">Comment</a>] [<a href="javascript:toggleInfo('boddapati2017classifying','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>Procedia computer science<br/>Vol. 112, pp. 2048-2056&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://www.sciencedirect.com/science/article/pii/S1877050917316599/pdf?md5=ebc69bd9b22743849a3a3f3730ad326a&pid=1-s2.0-S1877050917316599-main.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_boddapati2017classifying" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Automatic classification of environmental sounds, such as dog barking and glass breaking, is becoming increasingly interesting, especially for mobile devices. Most mobile devices contain both cameras and microphones, and companies that develop mobile devices would like to provide functionality for classifying both videos/images and sounds. In order to reduce the development costs one would like to use the same technology for both of these classification tasks. One way of achieving this is to represent environmental sounds as images, and use an image classification neural network when classifying images as well as sounds. In this paper we consider the classification accuracy for different image representations (Spectrogram, MFCC, and CRP) of environmental sounds. We evaluate the accuracy for environmental sounds in three publicly available datasets, using two well-known convolutional deep neural networks for image recognition (AlexNet and GoogLeNet). Our experiments show that we obtain good classification accuracy for the three datasets.</td>
+</tr>
+<tr id="rev_boddapati2017classifying" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: CLassify environmental sound using image recognition system. Citation - 81</td>
+</tr>
+<tr id="bib_boddapati2017classifying" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{boddapati2017classifying,
+  author = {Boddapati, Venkatesh and Petef, Andrej and Rasmusson, Jim and Lundberg, Lars},
+  title = {Classifying environmental sounds using image recognition networks},
+  journal = {Procedia computer science},
+  publisher = {Elsevier},
+  year = {2017},
+  volume = {112},
+  pages = {2048--2056},
+  url = {https://www.sciencedirect.com/science/article/pii/S1877050917316599/pdf?md5=ebc69bd9b22743849a3a3f3730ad326a&amp;pid=1-s2.0-S1877050917316599-main.pdf}
+}
+</pre></td>
+</tr>
+<tr id="chachada2014environmental" class="entry">
+	<td>Chachada, S. and Kuo, C.-C.J.</td>
+	<td>Environmental sound recognition: A survey <p class="infolinks">[<a href="javascript:toggleInfo('chachada2014environmental','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('chachada2014environmental','comment')">Comment</a>] [<a href="javascript:toggleInfo('chachada2014environmental','bibtex')">BibTeX</a>]</p></td>
+	<td>2014</td>
+	<td>APSIPA Transactions on Signal and Information Processing<br/>Vol. 3&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://www.cambridge.org/core/services/aop-cambridge-core/content/view/96211C365DC7B250CEEFFB15026A5CDF/S2048770314000122a.pdf/environmental-sound-recognition-a-survey.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_chachada2014environmental" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Although research in audio recognition has traditionally focused on speech and music signals, the problem of environmental sound recognition (ESR) has received more attention in recent years. Research on ESR has significantly increased in the past<br>decade. Recent work has focused on the appraisal of non-stationary aspects of environmental sounds, and several new features predicated on non-stationary characteristics have been proposed. These features strive to maximize their information content<br>pertaining to signal’s temporal and spectral characteristics. Furthermore, sequential learning methods have been used to capture the long-term variation of environmental sounds. In this survey, we will offer a qualitative and elucidatory survey on recent<br>developments. It includes four parts: (i) basic environmental sound-processing schemes, (ii) stationary ESR techniques, (iii) non-stationary ESR techniques, and (iv) performance comparison of selected methods. Finally, concluding remarks and future<br>research and development trends in the ESR field will be given.</td>
+</tr>
+<tr id="rev_chachada2014environmental" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: A survey paper on environmental sound.</td>
+</tr>
+<tr id="bib_chachada2014environmental" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{chachada2014environmental,
+  author = {Chachada, Sachin and Kuo, C-C Jay},
+  title = {Environmental sound recognition: A survey},
+  journal = {APSIPA Transactions on Signal and Information Processing},
+  publisher = {Cambridge University Press},
+  year = {2014},
+  volume = {3},
+  note = {Number of citation - 130},
+  url = {https://www.cambridge.org/core/services/aop-cambridge-core/content/view/96211C365DC7B250CEEFFB15026A5CDF/S2048770314000122a.pdf/environmental-sound-recognition-a-survey.pdf}
+}
+</pre></td>
+</tr>
+<tr id="chollet2017xception" class="entry">
+	<td>Chollet, F.</td>
+	<td>Xception: Deep learning with depthwise separable convolutions <p class="infolinks">[<a href="javascript:toggleInfo('chollet2017xception','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('chollet2017xception','comment')">Comment</a>] [<a href="javascript:toggleInfo('chollet2017xception','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>Proceedings of the IEEE conference on computer vision and pattern recognition, pp. 1251-1258&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="http://openaccess.thecvf.com/content_cvpr_2017/papers/Chollet_Xception_Deep_Learning_CVPR_2017_paper.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_chollet2017xception" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: We present an interpretation of Inception modules in convolutional neural networks as being an intermediate step in-between regular convolution and the depthwise separable convolution operation (a depthwise convolution followed by a pointwise convolution). In this light, a depthwise separable convolution can be understood as an Inception module with a maximally large number of towers. This observation leads us to propose a novel deep convolutional neural network architecture inspired by Inception, where Inception modules have been replaced with depthwise separable convolutions. We show that this architecture, dubbed Xception, slightly outperforms Inception V3 on the ImageNet dataset (which Inception V3 was designed for), and significantly outperforms Inception V3 on a larger image classification dataset comprising 350 million images and 17,000 classes. Since the Xception architecture has the same number of parameters as Inception V3, the performance gains are not due<br>to increased capacity but rather to a more efficient use of model parameters.</td>
+</tr>
+<tr id="rev_chollet2017xception" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Xception. Citations - 3102</td>
+</tr>
+<tr id="bib_chollet2017xception" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{chollet2017xception,
+  author = {Chollet, Fran&ccedil;ois},
+  title = {Xception: Deep learning with depthwise separable convolutions},
+  booktitle = {Proceedings of the IEEE conference on computer vision and pattern recognition},
+  year = {2017},
+  pages = {1251--1258},
+  url = {http://openaccess.thecvf.com/content_cvpr_2017/papers/Chollet_Xception_Deep_Learning_CVPR_2017_paper.pdf}
+}
+</pre></td>
+</tr>
+<tr id="cooley1965algorithm" class="entry">
+	<td>Cooley, J.W. and Tukey, J.W.</td>
+	<td>An algorithm for the machine calculation of complex Fourier series <p class="infolinks">[<a href="javascript:toggleInfo('cooley1965algorithm','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('cooley1965algorithm','comment')">Comment</a>] [<a href="javascript:toggleInfo('cooley1965algorithm','bibtex')">BibTeX</a>]</p></td>
+	<td>1965</td>
+	<td>Mathematics of computation<br/>Vol. 19(90), pp. 297-301&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://signallake.com/innovation/CooleyTukeyApr65.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_cooley1965algorithm" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: An efficient method for the calculation of the interactions of a 2'factorial ex-periment was introduced by Yates and is widely known by his name. The generalization to 3'was given by Box et al.[1]. Good [2] generalized these methods and gave elegant algorithms for which one class of applications is the calculation of Fourier series. In their full generality, Good's methods are applicable to certain problems in which one must multiply an N-vector by an NXN matrix which can be factored into m sparse matrices, where m is proportional to log N</td>
+</tr>
+<tr id="rev_cooley1965algorithm" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Machine calculation of complex fourier transform. Citations - 15883</td>
+</tr>
+<tr id="bib_cooley1965algorithm" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{cooley1965algorithm,
+  author = {Cooley, James W and Tukey, John W},
+  title = {An algorithm for the machine calculation of complex Fourier series},
+  journal = {Mathematics of computation},
+  publisher = {JSTOR},
+  year = {1965},
+  volume = {19},
+  number = {90},
+  pages = {297--301},
+  url = {https://signallake.com/innovation/CooleyTukeyApr65.pdf}
+}
+</pre></td>
+</tr>
+<tr id="deng2009imagenet" class="entry">
+	<td>Deng, J., Dong, W., Socher, R., Li, L.-J., Li, K. and Fei-Fei, L.</td>
+	<td>Imagenet: A large-scale hierarchical image database <p class="infolinks">[<a href="javascript:toggleInfo('deng2009imagenet','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('deng2009imagenet','comment')">Comment</a>] [<a href="javascript:toggleInfo('deng2009imagenet','bibtex')">BibTeX</a>]</p></td>
+	<td>2009</td>
+	<td>2009 IEEE conference on computer vision and pattern recognition, pp. 248-255&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://www.researchgate.net/profile/Li_Jia_Li/publication/221361415_ImageNet_a_Large-Scale_Hierarchical_Image_Database/links/00b495388120dbc339000000/ImageNet-a-Large-Scale-Hierarchical-Image-Database.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_deng2009imagenet" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: The explosion of image data on the Internet has the potential to foster more sophisticated and robust models and algorithms to index, retrieve, organize and interact with images and multimedia data. But exactly how such data can be harnessed and organized remains a critical problem. We introduce here a new database called “ImageNet”, a large-scale ontology of images built upon the backbone of the WordNet structure. ImageNet aims to populate the majority of the 80,000 synsets of WordNet with an average of 500-1000 clean and full resolution images. This will result in tens of millions of annotated images organized by the semantic hierarchy of WordNet. This paper offers a detailed analysis of ImageNet in its current state: 12 subtrees with 5247 synsets and 3.2 million images in total. We show that ImageNet is much larger in scale and diversity and much more accurate than the current image datasets. Constructing such a large-scale database is a challenging task. We describe the data collection scheme with Amazon Mechanical Turk. Lastly, we illustrate the usefulness of ImageNet through three simple applications in object recognition, image classification and automatic object clustering. We hope that the scale, accuracy, diversity and hierarchical structure of ImageNet can offer unparalleled opportunities to researchers in the computer vision community and beyond.</td>
+</tr>
+<tr id="rev_deng2009imagenet" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Imagenet. Citations - 20658</td>
+</tr>
+<tr id="bib_deng2009imagenet" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{deng2009imagenet,
+  author = {Deng, Jia and Dong, Wei and Socher, Richard and Li, Li-Jia and Li, Kai and Fei-Fei, Li},
+  title = {Imagenet: A large-scale hierarchical image database},
+  booktitle = {2009 IEEE conference on computer vision and pattern recognition},
+  year = {2009},
+  pages = {248--255},
+  url = {https://www.researchgate.net/profile/Li_Jia_Li/publication/221361415_ImageNet_a_Large-Scale_Hierarchical_Image_Database/links/00b495388120dbc339000000/ImageNet-a-Large-Scale-Hierarchical-Image-Database.pdf}
+}
+</pre></td>
+</tr>
+<tr id="font2013freesound" class="entry">
+	<td>Font, F., Roma, G. and Serra, X.</td>
+	<td>Freesound technical demo <p class="infolinks">[<a href="javascript:toggleInfo('font2013freesound','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('font2013freesound','comment')">Comment</a>] [<a href="javascript:toggleInfo('font2013freesound','bibtex')">BibTeX</a>]</p></td>
+	<td>2013</td>
+	<td>Proceedings of the 21st ACM international conference on Multimedia, pp. 411-412&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="http://www.mtg.upf.es/system/files/publications/Font-Roma-Serra-ACMM-2013.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_font2013freesound" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Freesound is an online collaborative sound database where people with diverse interests share recorded sound samples under Creative Commons licenses. It was started in 2005 and it is being maintained to support diverse research projects and as a service to the overall research and artistic community. In this demo we want to introduce Freesound to the multimedia community and show its potential as a research resource. We begin by describing some general aspects of Freesound, its architecture and functionalities, and then explain potential usages that this framework has for research applications.</td>
+</tr>
+<tr id="rev_font2013freesound" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Freesound. Citations - 137</td>
+</tr>
+<tr id="bib_font2013freesound" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{font2013freesound,
+  author = {Font, Frederic and Roma, Gerard and Serra, Xavier},
+  title = {Freesound technical demo},
+  booktitle = {Proceedings of the 21st ACM international conference on Multimedia},
+  year = {2013},
+  pages = {411--412},
+  url = {http://www.mtg.upf.es/system/files/publications/Font-Roma-Serra-ACMM-2013.pdf}
+}
+</pre></td>
+</tr>
+<tr id="goyal2017accurate" class="entry">
+	<td>Goyal, P., Doll&aacute;r, P., Girshick, R., Noordhuis, P., Wesolowski, L., Kyrola, A., Tulloch, A., Jia, Y. and He, K.</td>
+	<td>Accurate, large minibatch sgd: Training imagenet in 1 hour <p class="infolinks">[<a href="javascript:toggleInfo('goyal2017accurate','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('goyal2017accurate','comment')">Comment</a>] [<a href="javascript:toggleInfo('goyal2017accurate','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>arXiv preprint arXiv:1706.02677&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://arxiv.org/pdf/1706.02677.pdf%5B3%5D%20ImageNet">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_goyal2017accurate" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Deep learning thrives with large neural networks and large datasets. However, larger networks and larger datasets result in longer training times that impede research and development progress. Distributed synchronous SGD offers a potential solution to this problem by dividing SGD minibatches over a pool of parallel workers. Yet to make this scheme efficient, the per-worker workload must be large, which implies nontrivial growth in the SGD minibatch size. In this paper, we empirically show that on the ImageNet dataset large minibatches cause optimization difficulties, but when these are addressed the trained networks exhibit good generalization. Specifically, we show no loss of accuracy when training with large minibatch sizes up to 8192 images. To achieve this result, we adopt a hyper-parameter-free linear scaling rule for adjusting learning rates as a function of minibatch size and develop a new warmup scheme that overcomes optimization challenges early in training. With these simple techniques, our Caffe2-based system trains ResNet-50 with a minibatch size of 8192 on 256 GPUs in one hour, while matching small minibatch accuracy. Using commodity hardware, our implementation achieves &nbsp;90% scaling efficiency when moving from 8 to 256 GPUs. Our findings enable training visual recognition models on internet-scale data with high efficiency.</td>
+</tr>
+<tr id="rev_goyal2017accurate" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Train imagenet in 1 hr. citations - 1168</td>
+</tr>
+<tr id="bib_goyal2017accurate" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{goyal2017accurate,
+  author = {Goyal, Priya and Doll&aacute;r, Piotr and Girshick, Ross and Noordhuis, Pieter and Wesolowski, Lukasz and Kyrola, Aapo and Tulloch, Andrew and Jia, Yangqing and He, Kaiming},
+  title = {Accurate, large minibatch sgd: Training imagenet in 1 hour},
+  journal = {arXiv preprint arXiv:1706.02677},
+  year = {2017},
+  url = {https://arxiv.org/pdf/1706.02677.pdf%5B3%5D%20ImageNet}
+}
+</pre></td>
+</tr>
+<tr id="harris1978use" class="entry">
+	<td>Harris, F.J.</td>
+	<td>On the use of windows for harmonic analysis with the discrete Fourier transform <p class="infolinks">[<a href="javascript:toggleInfo('harris1978use','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('harris1978use','comment')">Comment</a>] [<a href="javascript:toggleInfo('harris1978use','bibtex')">BibTeX</a>]</p></td>
+	<td>1978</td>
+	<td>Proceedings of the IEEE<br/>Vol. 66(1), pp. 51-83&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://www.researchgate.net/profile/Fred_Harris2/publication/2995027_On_the_Use_of_Windows_for_Harmonic_Analysis_With_the_Discrete_Fourier_Transform/links/542425060cf26120b7a71ee2.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_harris1978use" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: This paper makes available a concise review of data windows and their affect on the detection of harmonic signals in the presence of broad-band noise, and in the presence of nearby strong harmonic interference. We also call attention to a number of common errors in the application of windows when used with the fast Fourier transform. This paper includes a comprehensive catalog of data windows along with their significant performance parameters from which the different windows can be compared. Finally, an example demonstrates.</td>
+</tr>
+<tr id="rev_harris1978use" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: harmonic analysis with DFT. Citations - 8473</td>
+</tr>
+<tr id="bib_harris1978use" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{harris1978use,
+  author = {Harris, Fredric J},
+  title = {On the use of windows for harmonic analysis with the discrete Fourier transform},
+  journal = {Proceedings of the IEEE},
+  publisher = {IEEE},
+  year = {1978},
+  volume = {66},
+  number = {1},
+  pages = {51--83},
+  url = {https://www.researchgate.net/profile/Fred_Harris2/publication/2995027_On_the_Use_of_Windows_for_Harmonic_Analysis_With_the_Discrete_Fourier_Transform/links/542425060cf26120b7a71ee2.pdf}
+}
+</pre></td>
+</tr>
+<tr id="harte2006detecting" class="entry">
+	<td>Harte, C., Sandler, M. and Gasser, M.</td>
+	<td>Detecting harmonic change in musical audio <p class="infolinks">[<a href="javascript:toggleInfo('harte2006detecting','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('harte2006detecting','comment')">Comment</a>] [<a href="javascript:toggleInfo('harte2006detecting','bibtex')">BibTeX</a>]</p></td>
+	<td>2006</td>
+	<td>Proceedings of the 1st ACM workshop on Audio and music computing multimedia, pp. 21-26&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.211.3404&rep=rep1&type=pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_harte2006detecting" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: We propose a novel method for detecting changes in the harmonic content of musical audio signals. Our method uses a new model for Equal Tempered Pitch Class Space. This model maps 12-bin chroma vectors to the interior space of a 6-D polytope; pitch classes are mapped onto the vertices of this polytope. Close harmonic relations such as fifths and thirds appear as small Euclidian distances. We calculate the Euclidian distance between analysis frames n +1 and n -1 to develop a harmonic change measure for frame n. A peak in the detection function denotes a transition from one harmonically stable region to another. Initial experiments show that the algorithm can successfully detect harmonic changes such as chord boundaries in polyphonic audio recordings.</td>
+</tr>
+<tr id="rev_harte2006detecting" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Harmonic in audio. Citations - 239</td>
+</tr>
+<tr id="bib_harte2006detecting" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{harte2006detecting,
+  author = {Harte, Christopher and Sandler, Mark and Gasser, Martin},
+  title = {Detecting harmonic change in musical audio},
+  booktitle = {Proceedings of the 1st ACM workshop on Audio and music computing multimedia},
+  year = {2006},
+  pages = {21--26},
+  url = {http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.211.3404&amp;rep=rep1&amp;type=pdf}
+}
+</pre></td>
+</tr>
+<tr id="he2016deep" class="entry">
+	<td>He, K., Zhang, X., Ren, S. and Sun, J.</td>
+	<td>Deep residual learning for image recognition <p class="infolinks">[<a href="javascript:toggleInfo('he2016deep','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('he2016deep','comment')">Comment</a>] [<a href="javascript:toggleInfo('he2016deep','bibtex')">BibTeX</a>]</p></td>
+	<td>2016</td>
+	<td>Proceedings of the IEEE conference on computer vision and pattern recognition, pp. 770-778&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="http://openaccess.thecvf.com/content_cvpr_2016/papers/He_Deep_Residual_Learning_CVPR_2016_paper.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_he2016deep" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Deeper neural networks are more difficult to train. We present a residual learning framework to ease the training of networks that are substantially deeper than those used previously. We explicitly reformulate the layers as learning residual functions with reference to the layer inputs, instead of learning unreferenced functions. We provide comprehensive empirical evidence showing that these residual networks are easier to optimize, and can gain accuracy from considerably increased depth. On the ImageNet dataset we evaluate residual nets with a depth of up to 152 layers—8× deeper than VGG nets [40] but still having lower complexity. An ensemble of these residual nets achieves 3.57% error on the ImageNet test set. This result won the 1st place on the ILSVRC 2015 classification task. We also present analysis on CIFAR-10 with 100 and 1000 layers. The depth of representations is of central importance for many visual recognition tasks. Solely due to our extremely deep representations, we obtain a 28% relative improvement on the COCO object detection dataset. Deep residual nets are foundations of our submissions to ILSVRC &amp; COCO 2015 competitions1, where we also won the 1st places on the tasks of ImageNet detection, ImageNet localization, COCO detection, and COCO segmentation.</td>
+</tr>
+<tr id="rev_he2016deep" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Deep residual learning. Citations - 53862</td>
+</tr>
+<tr id="bib_he2016deep" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{he2016deep,
+  author = {He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  title = {Deep residual learning for image recognition},
+  booktitle = {Proceedings of the IEEE conference on computer vision and pattern recognition},
+  year = {2016},
+  pages = {770--778},
+  url = {http://openaccess.thecvf.com/content_cvpr_2016/papers/He_Deep_Residual_Learning_CVPR_2016_paper.pdf}
+}
+</pre></td>
+</tr>
+<tr id="heinzel2002spectrum" class="entry">
+	<td>Heinzel, G., R&uuml;diger, A. and Schilling, R.</td>
+	<td>Spectrum and spectral density estimation by the Discrete Fourier transform (DFT), including a comprehensive list of window functions and some new at-top windows <p class="infolinks">[<a href="javascript:toggleInfo('heinzel2002spectrum','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('heinzel2002spectrum','comment')">Comment</a>] [<a href="javascript:toggleInfo('heinzel2002spectrum','bibtex')">BibTeX</a>]</p></td>
+	<td>2002</td>
+	<td>&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://pure.mpg.de/rest/items/item_152164_1/component/file_152163/content">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_heinzel2002spectrum" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: This report tries to give a practical overview about the estimation of power spectra/power spectral densities using the DFT/FFT. One point that is emphasized is the relationship between estimates of power spectra and power spectral densities which is given by the effective noise bandwidth (ENBW). Included is a detailed list of common and useful window functions, among them the often neglected flat-top windows. Special highlights are a procedure to test new programs, a table of comprehensive graphs for each window and the introduction of a whole family of new flat-top windows that feature sidelobe suppression levels of up to −248 dB, as compared with −90 dB of the best flat-top windows available until now.</td>
+</tr>
+<tr id="rev_heinzel2002spectrum" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Spectrum and spectral density estimation by the DFT. CItations - 315</td>
+</tr>
+<tr id="bib_heinzel2002spectrum" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{heinzel2002spectrum,
+  author = {Heinzel, Gerhard and R&uuml;diger, Albrecht and Schilling, Roland},
+  title = {Spectrum and spectral density estimation by the Discrete Fourier transform (DFT), including a comprehensive list of window functions and some new at-top windows},
+  year = {2002},
+  url = {https://pure.mpg.de/rest/items/item_152164_1/component/file_152163/content}
+}
+</pre></td>
+</tr>
+<tr id="jiang2002music" class="entry">
+	<td>Jiang, D.-N., Lu, L., Zhang, H.-J., Tao, J.-H. and Cai, L.-H.</td>
+	<td>Music type classification by spectral contrast feature <p class="infolinks">[<a href="javascript:toggleInfo('jiang2002music','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('jiang2002music','comment')">Comment</a>] [<a href="javascript:toggleInfo('jiang2002music','bibtex')">BibTeX</a>]</p></td>
+	<td>2002</td>
+	<td><br/>Vol. 1Proceedings. IEEE International Conference on Multimedia and Expo, pp. 113-116&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.583.7201&rep=rep1&type=pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_jiang2002music" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Automatic music type classification is very helpful for the management of digital music databases. In this paper, the octave-based spectral contrast feature is proposed to represent the spectral characteristics of a music clip. It represented the relative spectral distribution instead of average spectral envelope. Experiments show that the octave-based spectral contrast feature performs well in music type classification. Another comparison experiment demonstrates that the octave-based spectral contrast feature has a better discrimination among different music types than mel-frequency cepstral coefficients (MFCC), which is often used in previous music type classification systems.</td>
+</tr>
+<tr id="rev_jiang2002music" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Spectral contrast feature. CItations  - 313</td>
+</tr>
+<tr id="bib_jiang2002music" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{jiang2002music,
+  author = {Jiang, Dan-Ning and Lu, Lie and Zhang, Hong-Jiang and Tao, Jian-Hua and Cai, Lian-Hong},
+  title = {Music type classification by spectral contrast feature},
+  booktitle = {Proceedings. IEEE International Conference on Multimedia and Expo},
+  year = {2002},
+  volume = {1},
+  pages = {113--116},
+  url = {http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.583.7201&amp;rep=rep1&amp;type=pdf}
+}
+</pre></td>
+</tr>
+<tr id="jin2016video" class="entry">
+	<td>Jin, Q. and Liang, J.</td>
+	<td>Video description generation using audio and visual cues <p class="infolinks">[<a href="javascript:toggleInfo('jin2016video','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('jin2016video','comment')">Comment</a>] [<a href="javascript:toggleInfo('jin2016video','bibtex')">BibTeX</a>]</p></td>
+	<td>2016</td>
+	<td>Proceedings of the 2016 ACM on International Conference on Multimedia Retrieval, pp. 239-242&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="http://www.cs.cmu.edu/~junweil/camera_ready/icmr16.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_jin2016video" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: The recent advances in image captioning stimulate the research in generating natural language description for visual content, which can be widely applied in many applications such as assisting blind people. Video description generation is a more complex task than image caption. Most works of video description generation focus on visual information in the video. However, audio provides rich information for describing video contents as well. In this paper, we propose to generate video descriptions in natural sentences using both audio and visual cues. We use unified deep neural networks with both convolutional and recurrent structure. Experimental results on the Microsoft Research Video Description (MSVD) corpus prove that fusing audio information greatly improves the video description performance.</td>
+</tr>
+<tr id="rev_jin2016video" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Video descirption using audio and visual cues. Citations - 21</td>
+</tr>
+<tr id="bib_jin2016video" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{jin2016video,
+  author = {Jin, Qin and Liang, Junwei},
+  title = {Video description generation using audio and visual cues},
+  booktitle = {Proceedings of the 2016 ACM on International Conference on Multimedia Retrieval},
+  year = {2016},
+  pages = {239--242},
+  url = {http://www.cs.cmu.edu/&nbsp;junweil/camera_ready/icmr16.pdf}
+}
+</pre></td>
+</tr>
+<tr id="kingma2014adam" class="entry">
+	<td>Kingma, D.P. and Ba, J.</td>
+	<td>Adam: A method for stochastic optimization <p class="infolinks">[<a href="javascript:toggleInfo('kingma2014adam','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('kingma2014adam','comment')">Comment</a>] [<a href="javascript:toggleInfo('kingma2014adam','bibtex')">BibTeX</a>]</p></td>
+	<td>2014</td>
+	<td>arXiv preprint arXiv:1412.6980&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://arxiv.org/pdf/1412.6980?source=post_page---------------------------">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_kingma2014adam" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: We introduce Adam, an algorithm for first-order gradient-based optimization of stochastic objective functions, based on adaptive estimates of lower-order moments. The method is straightforward to implement, is computationally efficient, has little memory requirements, is invariant to diagonal rescaling of the gradients, and is well suited for problems that are large in terms of data and/or parameters. The method is also appropriate for non-stationary objectives and problems with very noisy and/or sparse gradients. The hyper-parameters have intuitive interpretations and typically require little tuning. Some connections to related algorithms, on which Adam was inspired, are discussed. We also analyze the theoretical convergence properties of the algorithm and provide a regret bound on the convergence rate that is comparable to the best known results under the online convex optimization framework. Empirical results demonstrate that Adam works well in practice and compares favorably to other stochastic optimization methods. Finally, we discuss AdaMax, a variant of Adam based on the infinity norm.</td>
+</tr>
+<tr id="rev_kingma2014adam" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Adam. Citations - 51672</td>
+</tr>
+<tr id="bib_kingma2014adam" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{kingma2014adam,
+  author = {Kingma, Diederik P and Ba, Jimmy},
+  title = {Adam: A method for stochastic optimization},
+  journal = {arXiv preprint arXiv:1412.6980},
+  year = {2014},
+  url = {https://arxiv.org/pdf/1412.6980?source=post_page---------------------------}
+}
+</pre></td>
+</tr>
+<tr id="koch2015siamese" class="entry">
+	<td>Koch, G., Zemel, R. and Salakhutdinov, R.</td>
+	<td>Siamese neural networks for one-shot image recognition <p class="infolinks">[<a href="javascript:toggleInfo('koch2015siamese','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('koch2015siamese','comment')">Comment</a>] [<a href="javascript:toggleInfo('koch2015siamese','bibtex')">BibTeX</a>]</p></td>
+	<td>2015</td>
+	<td><br/>Vol. 2ICML deep learning workshop&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="http://www.cs.toronto.edu/~gkoch/files/msc-thesis.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_koch2015siamese" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: The process of learning good features for machine learning applications can be very computationally expensive and may prove difficult in cases where little data is available. A prototypical example of this is the one-shot learning setting, in which we must correctly make predictions given only a single example of each new class. In this paper, we explore a method for learning siamese neural networks which employ a unique structure to naturally rank similarity between inputs. Once a network has been tuned, we can then capitalize on powerful discriminative features to generalize the predictive power of the network not just to new data, but to entirely new classes from unknown distributions. Using a convolutional architecture, we are able to achieve strong results which exceed those of other deep learning models with near stateof-the-art performance on one-shot classification tasks.</td>
+</tr>
+<tr id="rev_koch2015siamese" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Siamese neural network. Citations - 1461</td>
+</tr>
+<tr id="bib_koch2015siamese" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{koch2015siamese,
+  author = {Koch, Gregory and Zemel, Richard and Salakhutdinov, Ruslan},
+  title = {Siamese neural networks for one-shot image recognition},
+  booktitle = {ICML deep learning workshop},
+  year = {2015},
+  volume = {2},
+  url = {http://www.cs.toronto.edu/&nbsp;gkoch/files/msc-thesis.pdf}
+}
+</pre></td>
+</tr>
+<tr id="krizhevsky2012imagenet" class="entry">
+	<td>Krizhevsky, A., Sutskever, I. and Hinton, G.E.</td>
+	<td>Imagenet classification with deep convolutional neural networks <p class="infolinks">[<a href="javascript:toggleInfo('krizhevsky2012imagenet','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('krizhevsky2012imagenet','comment')">Comment</a>] [<a href="javascript:toggleInfo('krizhevsky2012imagenet','bibtex')">BibTeX</a>]</p></td>
+	<td>2012</td>
+	<td>Advances in neural information processing systems, pp. 1097-1105&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_krizhevsky2012imagenet" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: We trained a large, deep convolutional neural network to classify the 1.3 million high-resolution images in the LSVRC-2010 ImageNet training set into the 1000 different classes. On the test data, we achieved top-1 and top-5 error rates of 39.7&#37; and 18.9&#37; which is considerably better than the previous state-of-the-art results. The neural network, which has 60 million parameters and 500,000 neurons, consists of five convolutional layers, some of which are followed by max-pooling layers, and two globally connected layers with a final 1000-way softmax. To make training faster, we used non-saturating neurons and a very efficient GPU implementation of convolutional nets. To reduce overfitting in the globally connected layers we employed a new regularization method that proved to be very effective.</td>
+</tr>
+<tr id="rev_krizhevsky2012imagenet" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Imagent, CNN. Citations - 68476</td>
+</tr>
+<tr id="bib_krizhevsky2012imagenet" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{krizhevsky2012imagenet,
+  author = {Krizhevsky, Alex and Sutskever, Ilya and Hinton, Geoffrey E},
+  title = {Imagenet classification with deep convolutional neural networks},
+  booktitle = {Advances in neural information processing systems},
+  year = {2012},
+  pages = {1097--1105},
+  url = {http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf}
+}
+</pre></td>
+</tr>
+<tr id="logan2000mel" class="entry">
+	<td>Logan, B. and others</td>
+	<td>Mel frequency cepstral coefficients for music modeling. <p class="infolinks">[<a href="javascript:toggleInfo('logan2000mel','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('logan2000mel','comment')">Comment</a>] [<a href="javascript:toggleInfo('logan2000mel','bibtex')">BibTeX</a>]</p></td>
+	<td>2000</td>
+	<td><br/>Vol. 270Ismir, pp. 1-11&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://www.academia.edu/download/30390942/musicir_paper.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_logan2000mel" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: We examine in some detail Mel Frequency Cepstral Coefficients (MFCCs)-the dominant features used for speech recognition-and investigate their applicability to modeling music. In particular, we examine two of the main assumptions of the process of forming MFCCs: these of the Mel frequency scale to model the spectra; and the use of the Discrete Cosine Transform (DCT) to decorrelate the Mel-spectral vectors. We examine the first assumption in the context of speech/music discrimination. Our results show that the use of the Mel scale for modelling music for at least not harmful for this problem.</td>
+</tr>
+<tr id="rev_logan2000mel" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: MFCC. Citations - 1435</td>
+</tr>
+<tr id="bib_logan2000mel" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{logan2000mel,
+  author = {Logan, Beth and others},
+  title = {Mel frequency cepstral coefficients for music modeling.},
+  booktitle = {Ismir},
+  year = {2000},
+  volume = {270},
+  pages = {1--11},
+  url = {https://www.academia.edu/download/30390942/musicir_paper.pdf}
+}
+</pre></td>
+</tr>
+<tr id="maragos1993amplitude" class="entry">
+	<td>Maragos, P., Kaiser, J.F. and Quatieri, T.F.</td>
+	<td>On amplitude and frequency demodulation using energy operators <p class="infolinks">[<a href="javascript:toggleInfo('maragos1993amplitude','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('maragos1993amplitude','comment')">Comment</a>] [<a href="javascript:toggleInfo('maragos1993amplitude','bibtex')">BibTeX</a>]</p></td>
+	<td>1993</td>
+	<td>IEEE Transactions on signal processing<br/>Vol. 41(4), pp. 1532-1550&nbsp;</td>
+	<td>article</td>
+	<td><a href="http://cvsp.cs.ntua.gr/publications/jpubl+bchap/MaragosKaiserQuatieri_AFModEnergOper_ieeetSP1993.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_maragos1993amplitude" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: It is shown that the nonlinear energy-tracking signal operator Psi (x)=(dx/dt)/sup 2/-xd/sup 2/x/dt/sup 2/ and its discrete-time counterpart can estimate the AM and FM modulating signals. Specifically, Psi can approximately estimate the amplitude envelope of AM signals and the instantaneous frequency of FM signals. Bounds are derived for the approximation errors, which are negligible under general realistic conditions. These results, coupled with the simplicity of Psi , establish the usefulness of the energy operator for AM and FM signal demodulation. These ideas are then extended to a more general class of signals that are sine waves with a time-varying amplitude and frequency and thus contain both an AM and an FM component; for such signals it is shown that Psi can approximately track the product of their amplitude envelope and their instantaneous frequency. The theoretical analysis is done for both continuous- and discrete-time signals</td>
+</tr>
+<tr id="rev_maragos1993amplitude" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Energy operators. Citations - 663</td>
+</tr>
+<tr id="bib_maragos1993amplitude" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{maragos1993amplitude,
+  author = {Maragos, Petros and Kaiser, James F and Quatieri, Thomas F},
+  title = {On amplitude and frequency demodulation using energy operators},
+  journal = {IEEE Transactions on signal processing},
+  publisher = {IEEE},
+  year = {1993},
+  volume = {41},
+  number = {4},
+  pages = {1532--1550},
+  url = {http://cvsp.cs.ntua.gr/publications/jpubl+bchap/MaragosKaiserQuatieri_AFModEnergOper_ieeetSP1993.pdf}
+}
+</pre></td>
+</tr>
+<tr id="marwan2002recurrence" class="entry">
+	<td>Marwan, N., Wessel, N., Meyerfeldt, U., Schirdewan, A. and Kurths, J.</td>
+	<td>Recurrence-plot-based measures of complexity and their application to heart-rate-variability data <p class="infolinks">[<a href="javascript:toggleInfo('marwan2002recurrence','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('marwan2002recurrence','comment')">Comment</a>] [<a href="javascript:toggleInfo('marwan2002recurrence','bibtex')">BibTeX</a>]</p></td>
+	<td>2002</td>
+	<td>Physical review E<br/>Vol. 66(2), pp. 026702&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://arxiv.org/pdf/physics/0201064">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_marwan2002recurrence" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: The knowledge of transitions between regular, laminar or chaotic behaviors is essential to understand the underlying mechanisms behind complex systems. While several linear approaches are often insufficient to describe such processes, there are several nonlinear methods that, however, require rather long time observations. To overcome these difficulties, we propose measures of complexity based on vertical structures in recurrence plots and apply them to the logistic map as well as to heart-rate-variability data. For the logistic map these measures enable us not only to detect transitions between chaotic and periodic states, but also to identify laminar states, i.e., chaos-chaos transitions. The traditional recurrence quantification analysis fails to detect the latter transitions. Applying our measures to the heart-rate-variability data, we are able to detect and quantify the laminar phases before a life-threatening cardiac arrhythmia occurs thereby facilitating a prediction of such an event. Our findings could be of importance for the therapy of malignant cardiac arrhythmias.</td>
+</tr>
+<tr id="rev_marwan2002recurrence" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Reccurance plot based measures. Citations - 897</td>
+</tr>
+<tr id="bib_marwan2002recurrence" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{marwan2002recurrence,
+  author = {Marwan, Norbert and Wessel, Niels and Meyerfeldt, Udo and Schirdewan, Alexander and Kurths, J&uuml;rgen},
+  title = {Recurrence-plot-based measures of complexity and their application to heart-rate-variability data},
+  journal = {Physical review E},
+  publisher = {APS},
+  year = {2002},
+  volume = {66},
+  number = {2},
+  pages = {026702},
+  url = {https://arxiv.org/pdf/physics/0201064}
+}
+</pre></td>
+</tr>
+<tr id="pedregosa2011scikit" class="entry">
+	<td>Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, M., Prettenhofer, P., Weiss, R., Dubourg, V. and others</td>
+	<td>Scikit-learn: Machine learning in Python <p class="infolinks">[<a href="javascript:toggleInfo('pedregosa2011scikit','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('pedregosa2011scikit','comment')">Comment</a>] [<a href="javascript:toggleInfo('pedregosa2011scikit','bibtex')">BibTeX</a>]</p></td>
+	<td>2011</td>
+	<td>the Journal of machine Learning research<br/>Vol. 12, pp. 2825-2830&nbsp;</td>
+	<td>article</td>
+	<td><a href="http://www.jmlr.org/papers/volume12/pedregosa11a/pedregosa11a.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_pedregosa2011scikit" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Scikit-learn is a Python module integrating a wide range of state-of-the-art machine learning algorithms for medium-scale supervised and unsupervised problems. This package focuses on bringing machine learning to non-specialists using a general-purpose high-level language. Emphasis is put on ease of use, performance, documentation, and API consistency. It has minimal dependencies and is distributed under the simplified BSD license, encouraging its use in both academic and commercial settings. Source code, binaries, and documentation can be downloaded from http://scikit-learn.sourceforge.net.</td>
+</tr>
+<tr id="rev_pedregosa2011scikit" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Scikit learn. Citations - 30048</td>
+</tr>
+<tr id="bib_pedregosa2011scikit" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{pedregosa2011scikit,
+  author = {Pedregosa, Fabian and Varoquaux, Ga&euml;l and Gramfort, Alexandre and Michel, Vincent and Thirion, Bertrand and Grisel, Olivier and Blondel, Mathieu and Prettenhofer, Peter and Weiss, Ron and Dubourg, Vincent and others},
+  title = {Scikit-learn: Machine learning in Python},
+  journal = {the Journal of machine Learning research},
+  publisher = {JMLR. org},
+  year = {2011},
+  volume = {12},
+  pages = {2825--2830},
+  url = {http://www.jmlr.org/papers/volume12/pedregosa11a/pedregosa11a.pdf}
+}
+</pre></td>
+</tr>
+<tr id="piczak2015environmental" class="entry">
+	<td>Piczak, K.J.</td>
+	<td>Environmental sound classification with convolutional neural networks <p class="infolinks">[<a href="javascript:toggleInfo('piczak2015environmental','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('piczak2015environmental','bibtex')">BibTeX</a>]</p></td>
+	<td>2015</td>
+	<td>2015 IEEE 25th International Workshop on Machine Learning for Signal Processing (MLSP), pp. 1-6&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://www.karolpiczak.com/papers/Piczak2015-ESC-ConvNet.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_piczak2015environmental" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: This paper evaluates the potential of convolutional neural networks in classifying short audio clips of environmental sounds. A deep model consisting of 2 convolutional layers with max-pooling and 2 fully connected layers is trained on a low level representation of audio data (segmented spectrograms) with deltas. The accuracy of the network is evaluated on 3 public datasets of environmental and urban recordings.<br>The model outperforms baseline implementations relying on mel-frequency cepstral coefficients and achieves results comparable to other state-of-the-art approaches.</td>
+</tr>
+<tr id="bib_piczak2015environmental" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{piczak2015environmental,
+  author = {Piczak, Karol J},
+  title = {Environmental sound classification with convolutional neural networks},
+  booktitle = {2015 IEEE 25th International Workshop on Machine Learning for Signal Processing (MLSP)},
+  year = {2015},
+  pages = {1--6},
+  note = {Number of citation - 411},
+  url = {https://www.karolpiczak.com/papers/Piczak2015-ESC-ConvNet.pdf}
+}
+</pre></td>
+</tr>
+<tr id="piczak2015environmental" class="entry">
+	<td>Piczak, K.J.</td>
+	<td>Environmental sound classification with convolutional neural networks <p class="infolinks">[<a href="javascript:toggleInfo('piczak2015environmental','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('piczak2015environmental','comment')">Comment</a>] [<a href="javascript:toggleInfo('piczak2015environmental','bibtex')">BibTeX</a>]</p></td>
+	<td>2015</td>
+	<td>2015 IEEE 25th International Workshop on Machine Learning for Signal Processing (MLSP), pp. 1-6&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://www.karolpiczak.com/papers/Piczak2015-ESC-ConvNet.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_piczak2015environmental" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: This paper evaluates the potential of convolutional neural networks in classifying short audio clips of environmental sounds. A deep model consisting of 2 convolutional layers with max-pooling and 2 fully connected layers is trained on a low level representation of audio data (segmented spectrograms) with deltas. The accuracy of the network is evaluated on 3 public datasets of environmental and urban recordings. The model outperforms baseline implementations relying on mel-frequency cepstral coefficients and achieves results comparable to other state-of-the-art approaches.</td>
+</tr>
+<tr id="rev_piczak2015environmental" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: ESC using CNN. First paper to implement CNN on environmetnal sound. Citation - 498</td>
+</tr>
+<tr id="bib_piczak2015environmental" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{piczak2015environmental,
+  author = {Piczak, Karol J},
+  title = {Environmental sound classification with convolutional neural networks},
+  booktitle = {2015 IEEE 25th International Workshop on Machine Learning for Signal Processing (MLSP)},
+  year = {2015},
+  pages = {1--6},
+  url = {https://www.karolpiczak.com/papers/Piczak2015-ESC-ConvNet.pdf}
+}
+</pre></td>
+</tr>
+<tr id="piczak2015esc" class="entry">
+	<td>Piczak, K.J.</td>
+	<td>ESC: Dataset for environmental sound classification <p class="infolinks">[<a href="javascript:toggleInfo('piczak2015esc','comment')">Comment</a>] [<a href="javascript:toggleInfo('piczak2015esc','bibtex')">BibTeX</a>]</p></td>
+	<td>2015</td>
+	<td>Proceedings of the 23rd ACM international conference on Multimedia, pp. 1015-1018&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://repo.pw.edu.pl/docstore/download/WUT071d13dab5c04fd28c03992e5d982acd/Piczak2015-ESC-Dataset.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="rev_piczak2015esc" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: ESC dataset.</td>
+</tr>
+<tr id="bib_piczak2015esc" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{piczak2015esc,
+  author = {Piczak, Karol J},
+  title = {ESC: Dataset for environmental sound classification},
+  booktitle = {Proceedings of the 23rd ACM international conference on Multimedia},
+  year = {2015},
+  pages = {1015--1018},
+  url = {https://repo.pw.edu.pl/docstore/download/WUT071d13dab5c04fd28c03992e5d982acd/Piczak2015-ESC-Dataset.pdf}
+}
+</pre></td>
+</tr>
+<tr id="raimbault2005urban" class="entry">
+	<td>Raimbault, M. and Dubois, D.</td>
+	<td>Urban soundscapes: Experiences and knowledge <p class="infolinks">[<a href="javascript:toggleInfo('raimbault2005urban','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('raimbault2005urban','comment')">Comment</a>] [<a href="javascript:toggleInfo('raimbault2005urban','bibtex')">BibTeX</a>]</p></td>
+	<td>2005</td>
+	<td>Cities<br/>Vol. 22(5), pp. 339-350&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://www.academia.edu/download/44648422/Urban_soundscapes_Experiences_and_knowle20160412-1457-17s3bbz.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_raimbault2005urban" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: The aim of the present work is to understand how the use of the notion of soundscapes can help in conceiving ambient sound environments in cities. From an overview of recent studies concerned with assessments of sound phenomena in everyday-life situations, the relevance of the soundscape concept is discussed as structuring the categorical space of sounds in cities. Urban planners have been interviewed concerning the soundscape concept in relation to urban projects. This allows comparisons between acousticians’, city-users’ and planners’ categorizations of urban soundscapes, and suggests that a simple decrease of noise level or the elimination of noises is insufficient to account for urban environment improvement.</td>
+</tr>
+<tr id="rev_raimbault2005urban" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Urban soundscapes. Citations - 393</td>
+</tr>
+<tr id="bib_raimbault2005urban" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{raimbault2005urban,
+  author = {Raimbault, Manon and Dubois, Dani&egrave;le},
+  title = {Urban soundscapes: Experiences and knowledge},
+  journal = {Cities},
+  publisher = {Elsevier},
+  year = {2005},
+  volume = {22},
+  number = {5},
+  pages = {339--350},
+  url = {https://www.academia.edu/download/44648422/Urban_soundscapes_Experiences_and_knowle20160412-1457-17s3bbz.pdf}
+}
+</pre></td>
+</tr>
+<tr id="sailor2017unsupervised" class="entry">
+	<td>Sailor, H.B., Agrawal, D.M. and Patil, H.A.</td>
+	<td>Unsupervised Filterbank Learning Using Convolutional Restricted Boltzmann Machine for Environmental Sound Classification. <p class="infolinks">[<a href="javascript:toggleInfo('sailor2017unsupervised','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('sailor2017unsupervised','comment')">Comment</a>] [<a href="javascript:toggleInfo('sailor2017unsupervised','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>INTERSPEECH, pp. 3107-3111&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://pdfs.semanticscholar.org/f6fd/1be38a2d764d900b11b382a379efe88b3ed6.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_sailor2017unsupervised" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: In this paper, we propose to use Convolutional Restricted Boltzmann Machine (ConvRBM) to learn filterbank from the raw audio signals. ConvRBM is a generative model trained in an unsupervised way to model the audio signals of arbitrary lengths. ConvRBM is trained using annealed dropout technique and parameters are optimized using Adam optimization. The subband filters of ConvRBM learned from the ESC-50 database resemble Fourier basis in the mid-frequency range while some of the low-frequency subband filters resemble Gammatone basis. The auditory-like filterbank scale is nonlinear w.r.t. the center frequencies of the subband filters and follows the standard auditory scales. We have used our proposed model as a front-end for the Environmental Sound Classification (ESC) task with supervised Convolutional Neural Network (CNN) as a back-end. Using CNN classifier, the ConvRBM filterbank (ConvRBMBANK) and its score-level fusion with the Mel filterbank energies (FBEs) gave an absolute improvement of 10.65 %, and 18.70 % in the classification accuracy, respectively, over FBEs alone on the ESC-50 database. This shows that the proposed ConvRBM filterbank also contains highly complementary information over the Mel filterbank, which is helpful in the ESC task.</td>
+</tr>
+<tr id="rev_sailor2017unsupervised" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: CRB machine for ESC. Citation - 40</td>
+</tr>
+<tr id="bib_sailor2017unsupervised" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{sailor2017unsupervised,
+  author = {Sailor, Hardik B and Agrawal, Dharmesh M and Patil, Hemant A},
+  title = {Unsupervised Filterbank Learning Using Convolutional Restricted Boltzmann Machine for Environmental Sound Classification.},
+  booktitle = {INTERSPEECH},
+  year = {2017},
+  pages = {3107--3111},
+  url = {https://pdfs.semanticscholar.org/f6fd/1be38a2d764d900b11b382a379efe88b3ed6.pdf}
+}
+</pre></td>
+</tr>
+<tr id="salamon2014dataset" class="entry">
+	<td>Salamon, J., Jacoby, C. and Bello, J.P.</td>
+	<td>A dataset and taxonomy for urban sound research <p class="infolinks">[<a href="javascript:toggleInfo('salamon2014dataset','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('salamon2014dataset','comment')">Comment</a>] [<a href="javascript:toggleInfo('salamon2014dataset','bibtex')">BibTeX</a>]</p></td>
+	<td>2014</td>
+	<td>Proceedings of the 22nd ACM international conference on Multimedia, pp. 1041-1044&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://www.researchgate.net/profile/Justin_Salamon/publication/267269056_A_Dataset_and_Taxonomy_for_Urban_Sound_Research/links/544936af0cf2f63880810a84/A-Dataset-and-Taxonomy-for-Urban-Sound-Research.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_salamon2014dataset" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Automatic urban sound classification is a growing area of research with applications in multimedia retrieval and urban informatics. In this paper we identify two main barriers to research in this area - the lack of a common taxonomy and the scarceness of large, real-world, annotated data. To address these issues we present a taxonomy of urban sounds and a new dataset, UrbanSound, containing 27 hours of audio with 18.5 hours of annotated sound event occurrences across 10 sound classes. The challenges presented by the new dataset are studied through a series of experiments using a baseline classification system.</td>
+</tr>
+<tr id="rev_salamon2014dataset" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Urban sound dataset. Citations - 492</td>
+</tr>
+<tr id="bib_salamon2014dataset" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{salamon2014dataset,
+  author = {Salamon, Justin and Jacoby, Christopher and Bello, Juan Pablo},
+  title = {A dataset and taxonomy for urban sound research},
+  booktitle = {Proceedings of the 22nd ACM international conference on Multimedia},
+  year = {2014},
+  pages = {1041--1044},
+  url = {https://www.researchgate.net/profile/Justin_Salamon/publication/267269056_A_Dataset_and_Taxonomy_for_Urban_Sound_Research/links/544936af0cf2f63880810a84/A-Dataset-and-Taxonomy-for-Urban-Sound-Research.pdf}
+}
+</pre></td>
+</tr>
+<tr id="salamon2017deep" class="entry">
+	<td>Salamon, J. and Bello, J.P.</td>
+	<td>Deep convolutional neural networks and data augmentation for environmental sound classification <p class="infolinks">[<a href="javascript:toggleInfo('salamon2017deep','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('salamon2017deep','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>IEEE Signal Processing Letters<br/>Vol. 24(3), pp. 279-283&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://arxiv.org/pdf/1608.04363">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_salamon2017deep" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: The ability of deep convolutional neural networks (CNNs) to learn discriminative spectro-temporal patterns makes them well suited to environmental sound classification. However, the relative scarcity of labeled data has impeded the exploitation of this family of high-capacity models. This study has two primary contributions: first, we propose a deep CNN architecture for environmental sound classification. Second, we propose the use of audio data augmentation for overcoming the problem of data scarcity and explore the influence of different augmentations on the performance of the proposed CNN architecture. Combined with data augmentation, the proposed model produces state-of-theart results for environmental sound classification. We show that the improved performance stems from the combination of a deep, highcapacity model and an augmented training set: this combination outperforms both the proposed CNN without augmentation and a “shallow” dictionary learning model with augmentation. Finally, we examine the influence of each augmentation on the model’s classification accuracy for each class, and observe that the accuracy for each class is influenced differently by each augmentation, suggesting that the performance of the model could be improved further by applying class-conditional data augmentation.</td>
+</tr>
+<tr id="bib_salamon2017deep" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{salamon2017deep,
+  author = {Salamon, Justin and Bello, Juan Pablo},
+  title = {Deep convolutional neural networks and data augmentation for environmental sound classification},
+  journal = {IEEE Signal Processing Letters},
+  publisher = {IEEE},
+  year = {2017},
+  volume = {24},
+  number = {3},
+  pages = {279--283},
+  note = {citation - 538},
+  url = {https://arxiv.org/pdf/1608.04363}
+}
+</pre></td>
+</tr>
+<tr id="salamon2017deep" class="entry">
+	<td>Salamon, J. and Bello, J.P.</td>
+	<td>Deep convolutional neural networks and data augmentation for environmental sound classification <p class="infolinks">[<a href="javascript:toggleInfo('salamon2017deep','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('salamon2017deep','comment')">Comment</a>] [<a href="javascript:toggleInfo('salamon2017deep','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>IEEE Signal Processing Letters<br/>Vol. 24(3), pp. 279-283&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://arxiv.org/pdf/1608.04363">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_salamon2017deep" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: The ability of deep convolutional neural networks (CNNs) to learn discriminative spectro-temporal patterns makes them well suited to environmental sound classification. However, the relative scarcity of labeled data has impeded the exploitation of this family of high-capacity models. This study has two primary contributions: first, we propose a deep CNN architecture for environmental sound classification. Second, we propose the use of audio data augmentation for overcoming the problem of data scarcity and explore the influence of different augmentations on the performance of the proposed CNN architecture. Combined with data augmentation, the proposed model produces state-of-the-art results for environmental sound classification. We show that the improved performance stems from the combination of a deep, high-capacity model and an augmented training set: this combination outperforms both the proposed CNN without augmentation and a “shallow” dictionary learning model with augmentation. Finally, we examine the influence of each augmentation on the model's classification accuracy for each class, and observe that the accuracy for each class is influenced differently by each augmentation, suggesting that the performance of the model could be improved further by applying class-conditional data augmentation.</td>
+</tr>
+<tr id="rev_salamon2017deep" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: DCNN and data augmentation for Environemntal sound. Citations - 660</td>
+</tr>
+<tr id="bib_salamon2017deep" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{salamon2017deep,
+  author = {Salamon, Justin and Bello, Juan Pablo},
+  title = {Deep convolutional neural networks and data augmentation for environmental sound classification},
+  journal = {IEEE Signal Processing Letters},
+  publisher = {IEEE},
+  year = {2017},
+  volume = {24},
+  number = {3},
+  pages = {279--283},
+  url = {https://arxiv.org/pdf/1608.04363}
+}
+</pre></td>
+</tr>
+<tr id="shepard1964circularity" class="entry">
+	<td>Shepard, R.N.</td>
+	<td>Circularity in judgments of relative pitch <p class="infolinks">[<a href="javascript:toggleInfo('shepard1964circularity','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('shepard1964circularity','comment')">Comment</a>] [<a href="javascript:toggleInfo('shepard1964circularity','bibtex')">BibTeX</a>]</p></td>
+	<td>1964</td>
+	<td>The Journal of the Acoustical Society of America<br/>Vol. 36(12), pp. 2346-2353&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://asa.scitation.org/doi/abs/10.1121/1.1919362">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_shepard1964circularity" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: A special set of computer‐generated complex tones is shown to lead to a complete breakdown of transitivity in judgments of relative pitch. Indeed, the tones can be represented as equally spaced points around a circle in such a way that the clockwise neighbor of each tone is judged higher in pitch while the counterclockwise neighbor is judged lower in pitch. Diametrically opposed tones—though clearly different in pitch—are quite ambiguous as to the direction of the difference. The results demonstrate the operation of a “proximity principle” for the continuum of frequency and suggest that perceived pitch cannot be adequately represented by a purely rectilinear scale.</td>
+</tr>
+<tr id="rev_shepard1964circularity" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Realtive pitch. Citations - 928</td>
+</tr>
+<tr id="bib_shepard1964circularity" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{shepard1964circularity,
+  author = {Shepard, Roger N},
+  title = {Circularity in judgments of relative pitch},
+  journal = {The Journal of the Acoustical Society of America},
+  publisher = {Acoustical Society of America},
+  year = {1964},
+  volume = {36},
+  number = {12},
+  pages = {2346--2353},
+  url = {https://asa.scitation.org/doi/abs/10.1121/1.1919362}
+}
+</pre></td>
+</tr>
+<tr id="slaney1993efficient" class="entry">
+	<td>Slaney, M. and others</td>
+	<td>An efficient implementation of the Patterson-Holdsworth auditory filter bank <p class="infolinks">[<a href="javascript:toggleInfo('slaney1993efficient','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('slaney1993efficient','comment')">Comment</a>] [<a href="javascript:toggleInfo('slaney1993efficient','bibtex')">BibTeX</a>]</p></td>
+	<td>1993</td>
+	<td>Apple Computer, Perception Group, Tech. Rep<br/>Vol. 35(8)&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://engineering.purdue.edu/~malcolm/apple/tr35/PattersonsEar.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_slaney1993efficient" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: This report describes an implementation of a cochlear model proposed by Roy Patterson [Patterson1992]. Like a previous report [Slaney1988], this document is an electronic notebook written using a software package called Mathematica™ [Wolfram 1988]. This report describes the filter bank and its implementation. The filter bank is designed as a set of parallel bandpass filters, each tuned to a different frequency. This report extends previous work by deriving an even more efficient implementation of the Gammatone filter bank, and by showing the MATLAB™ code to design and implement an ERB filter bank based on Gammatone filters.</td>
+</tr>
+<tr id="rev_slaney1993efficient" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Auditory filter bank. Citations - 661</td>
+</tr>
+<tr id="bib_slaney1993efficient" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{slaney1993efficient,
+  author = {Slaney, Malcolm and others},
+  title = {An efficient implementation of the Patterson-Holdsworth auditory filter bank},
+  journal = {Apple Computer, Perception Group, Tech. Rep},
+  year = {1993},
+  volume = {35},
+  number = {8},
+  url = {https://engineering.purdue.edu/&nbsp;malcolm/apple/tr35/PattersonsEar.pdf}
+}
+</pre></td>
+</tr>
+<tr id="sprengel2016audio" class="entry">
+	<td>Sprengel, E., Jaggi, M., Kilcher, Y. and Hofmann, T.</td>
+	<td>Audio based bird species identification using deep learning techniques <p class="infolinks">[<a href="javascript:toggleInfo('sprengel2016audio','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('sprengel2016audio','bibtex')">BibTeX</a>]</p></td>
+	<td>2016</td>
+	<td>&nbsp;</td>
+	<td>techreport</td>
+	<td><a href="https://infoscience.epfl.ch/record/229232/files/16090547.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_sprengel2016audio" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: In this paper we present a new audio classification method for bird species identification. Whereas most approaches apply nearest neighbour matching [6] or decision trees [8] using extracted templates for each bird species, ours draws upon techniques from speech recognition and recent advances in the domain of deep learning. With novel preprocessing and data augmentation methods, we train a convolutional neural network on the biggest publicly available dataset [5]. Our network architecture achieves a mean average precision score of 0.686 when predicting the main species of each sound file and scores 0.555 when background species are used as additional prediction targets. As this performance<br>surpasses current state of the art results, our approach won this years international BirdCLEF 2016 Recognition Challenge [3,4,1].</td>
+</tr>
+<tr id="bib_sprengel2016audio" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@techreport{sprengel2016audio,
+  author = {Sprengel, Elias and Jaggi, Martin and Kilcher, Yannic and Hofmann, Thomas},
+  title = {Audio based bird species identification using deep learning techniques},
+  year = {2016},
+  note = {Citation -55},
+  url = {https://infoscience.epfl.ch/record/229232/files/16090547.pdf}
+}
+</pre></td>
+</tr>
+<tr id="stevens1937scale" class="entry">
+	<td>Stevens, S.S., Volkmann, J. and Newman, E.B.</td>
+	<td>A scale for the measurement of the psychological magnitude pitch <p class="infolinks">[<a href="javascript:toggleInfo('stevens1937scale','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('stevens1937scale','comment')">Comment</a>] [<a href="javascript:toggleInfo('stevens1937scale','bibtex')">BibTeX</a>]</p></td>
+	<td>1937</td>
+	<td>The Journal of the Acoustical Society of America<br/>Vol. 8(3), pp. 185-190&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://asa.scitation.org/doi/abs/10.1121/1.1915893">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_stevens1937scale" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: A subjective scale for the measurement of pitch was constructed from determinations of the half‐value of pitches at various frequencies. This scale differs from both the musical scale and the frequency scale, neither of which is subjective. Five observers fractionated tones of 10 different frequencies at a loudness level of 60 db. From these fractionations a numerical scale was constructed which is proportional to the perceived magnitude of subjective pitch. In numbering the scale the 1000‐cycle tone was assigned the pitch of 1000 subjective units (mels). The close agreement of the pitch scale with an integration of the differential thresholds (DL's) shows that, unlike the DL's for loudness, all DL's for pitch are of uniform subjective magnitude. The agreement further implies that pitch and differential sensitivity to pitch are both rectilinear functions of extent on the basilar membrane. The correspondence of the pitch scale and the experimentally determined location of the resonant areas of the basilar membrane suggests that, in cutting a pitch in half, the observer adjusts the tone until it stimulates a position half‐way from the original locus to the apical end of the membrane. Measurement of the subjective size of musical intervals (such as octaves) in terms of the pitch scale shows that the intervals become larger as the frequency of the mid‐point of the interval increases (except in the two highest audible octaves). This result confirms earlier judgments as to the relative size of octaves in different parts of the frequency range.</td>
+</tr>
+<tr id="rev_stevens1937scale" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: psychological magnitude pitch. Citations - 1109</td>
+</tr>
+<tr id="bib_stevens1937scale" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{stevens1937scale,
+  author = {Stevens, Stanley Smith and Volkmann, John and Newman, Edwin B},
+  title = {A scale for the measurement of the psychological magnitude pitch},
+  journal = {The Journal of the Acoustical Society of America},
+  publisher = {Acoustical Society of America},
+  year = {1937},
+  volume = {8},
+  number = {3},
+  pages = {185--190},
+  url = {https://asa.scitation.org/doi/abs/10.1121/1.1915893}
+}
+</pre></td>
+</tr>
+<tr id="su2019environment" class="entry">
+	<td>Su, Y., Zhang, K., Wang, J. and Madani, K.</td>
+	<td>Environment sound classification using a two-stream CNN based on decision-level fusion <p class="infolinks">[<a href="javascript:toggleInfo('su2019environment','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('su2019environment','comment')">Comment</a>] [<a href="javascript:toggleInfo('su2019environment','bibtex')">BibTeX</a>]</p></td>
+	<td>2019</td>
+	<td>Sensors<br/>Vol. 19(7), pp. 1733&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://www.mdpi.com/1424-8220/19/7/1733/pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_su2019environment" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: With the popularity of using deep learning-based models in various categorization problems and their proven robustness compared to conventional methods, a growing number of researchers have exploited such methods in environment sound classification tasks in recent years. However, the performances of existing models use auditory features like log-mel spectrogram (LM) and mel frequency cepstral coefficient (MFCC), or raw waveform to train deep neural networks for environment sound classification (ESC) are unsatisfactory. In this paper, we first propose two combined features to give a more comprehensive representation of environment sounds Then, a fourfour-layer convolutional neural network (CNN) is presented to improve the performance of ESC with the proposed aggregated features. Finally, the CNN trained with different features are fused using the Dempster–Shafer evidence theory to compose TSCNN-DS model. The experiment results indicate that our combined features with the four-layer CNN are appropriate for environment sound taxonomic problems and dramatically outperform other conventional methods. The proposed TSCNN-DS model achieves a classification accuracy of 97.2%, which is the highest taxonomic accuracy on UrbanSound8K datasets compared to existing models.</td>
+</tr>
+<tr id="rev_su2019environment" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Two stream CNN for ESC task. Citations - 23</td>
+</tr>
+<tr id="bib_su2019environment" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{su2019environment,
+  author = {Su, Yu and Zhang, Ke and Wang, Jingyu and Madani, Kurosh},
+  title = {Environment sound classification using a two-stream CNN based on decision-level fusion},
+  journal = {Sensors},
+  publisher = {Multidisciplinary Digital Publishing Institute},
+  year = {2019},
+  volume = {19},
+  number = {7},
+  pages = {1733},
+  url = {https://www.mdpi.com/1424-8220/19/7/1733/pdf}
+}
+</pre></td>
+</tr>
+<tr id="tak2017novel" class="entry">
+	<td>Tak, R.N., Agrawal, D.M. and Patil, H.A.</td>
+	<td>Novel phase encoded mel filterbank energies for environmental sound classification <p class="infolinks">[<a href="javascript:toggleInfo('tak2017novel','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('tak2017novel','comment')">Comment</a>] [<a href="javascript:toggleInfo('tak2017novel','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>International Conference on Pattern Recognition and Machine Intelligence, pp. 317-325&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://www.researchgate.net/profile/Dharmesh_Agrawal/publication/320733074_Novel_Phase_Encoded_Mel_Filterbank_Energies_for_Environmental_Sound_Classification/links/5a084c780f7e9b68229c8947/Novel-Phase-Encoded-Mel-Filterbank-Energies-for-Environmental-Sound-Classification.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_tak2017novel" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: In Environment Sound Classification (ESC) task, only the magnitude spectrum is processed and the phase spectrum is ignored, which leads to degradation in the performance. In this paper, we propose to use phase encoded filterbank energies (PEFBEs) for ESC task. In proposed feature set, we have used Mel-filterbank, since it represents characteristics of human auditory processing. Here, we have used Convolutional Neural Network (CNN) as a pattern classifier. The experiments were performed on ESC-50 database. We found that our proposed PEFBEs feature set gives better results compared to the state-of-the-art Filterbank Energies (FBEs). In addition, score-level fusion of FBEs and proposed PEFBEs have been carried out, which leads to further relatively better performance than the individual feature set. Hence, the proposed PEFBEs captures the complementary information than FBEs alone.</td>
+</tr>
+<tr id="rev_tak2017novel" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: mel filterbank energies for ESC. Citations - 14</td>
+</tr>
+<tr id="bib_tak2017novel" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{tak2017novel,
+  author = {Tak, Rishabh N and Agrawal, Dharmesh M and Patil, Hemant A},
+  title = {Novel phase encoded mel filterbank energies for environmental sound classification},
+  booktitle = {International Conference on Pattern Recognition and Machine Intelligence},
+  year = {2017},
+  pages = {317--325},
+  url = {https://www.researchgate.net/profile/Dharmesh_Agrawal/publication/320733074_Novel_Phase_Encoded_Mel_Filterbank_Energies_for_Environmental_Sound_Classification/links/5a084c780f7e9b68229c8947/Novel-Phase-Encoded-Mel-Filterbank-Energies-for-Environmental-Sound-Classification.pdf}
+}
+</pre></td>
+</tr>
+<tr id="tokozume2017learning" class="entry">
+	<td>Tokozume, Y. and Harada, T.</td>
+	<td>Learning environmental sounds with end-to-end convolutional neural network <p class="infolinks">[<a href="javascript:toggleInfo('tokozume2017learning','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('tokozume2017learning','comment')">Comment</a>] [<a href="javascript:toggleInfo('tokozume2017learning','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>2017 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP), pp. 2721-2725&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://www.mi.t.u-tokyo.ac.jp/assets/publication/LEARNING_ENVIRONMENTAL_SOUNDS_WITH_END-TO-END_CONVOLUTIONAL_NEURAL_NETWORK.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_tokozume2017learning" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Environmental sound classification (ESC) is usually conducted based on handcrafted features such as the log-mel feature. Meanwhile, end-to-end classification systems perform feature extraction jointly with classification and have achieved success particularly in image classification. In the same manner, if environmental sounds could be directly learned from the raw waveforms, we would be able to extract a new feature effective for classification that could not have been designed by humans, and this new feature could improve the classification performance. In this paper, we propose a novel end-to-end ESC system using a convolutional neural network (CNN). The classification accuracy of our system on ESC-50 is 5.1% higher than that achieved when using logmel-CNN with the static log-mel feature. Moreover, we achieve a 6.5% improvement in classification accuracy over the state-of-the-art logmel-CNN with the static and delta log-mel feature, simply by combining our system and logmel-CNN.</td>
+</tr>
+<tr id="rev_tokozume2017learning" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Learning environmental sound using CNN. Citations - 84</td>
+</tr>
+<tr id="bib_tokozume2017learning" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{tokozume2017learning,
+  author = {Tokozume, Yuji and Harada, Tatsuya},
+  title = {Learning environmental sounds with end-to-end convolutional neural network},
+  booktitle = {2017 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)},
+  year = {2017},
+  pages = {2721--2725},
+  url = {https://www.mi.t.u-tokyo.ac.jp/assets/publication/LEARNING_ENVIRONMENTAL_SOUNDS_WITH_END-TO-END_CONVOLUTIONAL_NEURAL_NETWORK.pdf}
+}
+</pre></td>
+</tr>
+<tr id="tokozume2017learning" class="entry">
+	<td>Tokozume, Y., Ushiku, Y. and Harada, T.</td>
+	<td>Learning from between-class examples for deep sound recognition <p class="infolinks">[<a href="javascript:toggleInfo('tokozume2017learning','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('tokozume2017learning','comment')">Comment</a>] [<a href="javascript:toggleInfo('tokozume2017learning','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>arXiv preprint arXiv:1711.10282&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://arxiv.org/pdf/1711.10282">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_tokozume2017learning" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Deep learning methods have achieved high performance in sound recognition tasks. Deciding how to feed the training data is important for further performance improvement. We propose a novel learning method for deep sound recognition: Between-Class learning (BC learning). Our strategy is to learn a discriminative feature space by recognizing the between-class sounds as between-class sounds. We generate between-class sounds by mixing two sounds belonging to different classes with a random ratio. We then input the mixed sound to the model and train the model to output the mixing ratio. The advantages of BC learning are not limited only to the increase in variation of the training data; BC learning leads to an enlargement of Fisher's criterion in the feature space and a regularization of the positional relationship among the feature distributions of the classes. The experimental results show that BC learning improves the performance on various sound recognition networks, datasets, and data augmentation schemes, in which BC learning proves to be always beneficial. Furthermore, we construct a new deep sound recognition network (EnvNet-v2) and train it with BC learning. As a result, we achieved a performance surpasses the human level.</td>
+</tr>
+<tr id="rev_tokozume2017learning" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Learning between class using deep learning. Citations - 76</td>
+</tr>
+<tr id="bib_tokozume2017learning" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{tokozume2017learning,
+  author = {Tokozume, Yuji and Ushiku, Yoshitaka and Harada, Tatsuya},
+  title = {Learning from between-class examples for deep sound recognition},
+  journal = {arXiv preprint arXiv:1711.10282},
+  year = {2017},
+  url = {https://arxiv.org/pdf/1711.10282}
+}
+</pre></td>
+</tr>
+<tr id="uzkent2012non" class="entry">
+	<td>Uzkent, B., Barkana, B.D. and Cevikalp, H.</td>
+	<td>Non-speech environmental sound classification using SVMs with a new set of features <p class="infolinks">[<a href="javascript:toggleInfo('uzkent2012non','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('uzkent2012non','comment')">Comment</a>] [<a href="javascript:toggleInfo('uzkent2012non','bibtex')">BibTeX</a>]</p></td>
+	<td>2012</td>
+	<td>International Journal of Innovative Computing, Information and Control<br/>Vol. 8(5), pp. 3511-3524&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://www.researchgate.net/profile/Hakan_Cevikalp/publication/267782696_Non-speech_environmental_sound_classification_using_SVMs_with_a_new_set_of_features/links/54b7bf9f0cf24eb34f6ed7ff/Non-speech-environmental-sound-classification-using-SVMs-with-a-new-set-of-features.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_uzkent2012non" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Mel Frequency Cepstrum Coefficients (MFCCs) are considered as a method of stationary/pseudo-stationary feature extraction. They work very well for the classification of speech and music signals. MFCCs have also been used to classify non-speech sounds for audio surveillance systems, even though MFCCs do not completely reflect the time-varying features of non-stationary non-speech signals. We introduce a new 2D-feature set, used with a feature extraction method based on the pitch range (PR) of non-speech sounds and the Autocorrelation Function. We compare the classification accuracies of the proposed features of this new method to MFCCs by using Support Vector Machines (SVMs) and Radial Basis Function Neural Network classifiers. Non-speech environmental sounds: gunshot, glass breaking, scream, dog barking, rain, engine, and restaurant noise, were studied. The new feature set provides high accuracy rates when used as a classifier. Its usage with MFCCs significantly improves the accuracy rates of the given classifiers in the range of 4% to 35% depending on the classifier used, suggesting that both feature sets are complementary. SVM classifier using the Gaussian kernel provided the highest accuracy rates among the classifiers used in this study.</td>
+</tr>
+<tr id="rev_uzkent2012non" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Non speech ESC using SVM. Citations - 50.<p>● There are two major types of feature extraction process namely frequency based and the time<br>frequency based feature extraction.<br>● Stationary feature extraction produces an output that more represents the frequencies components in<br>the whole signal.<br>● The non stationary feature extraction chops the signal into discrete time units.<br>● Using MFCC features from the audio data is widely used for the speech and music signal.<br>● MFCCs are also used for the non speech sound recognition although they don’t explicitly represent<br>time varying features of the non speech signal.<br>● Most of the non speech sounds have characteristics that can be classified based on how the data<br>change over a period of time.<br>● Traditional conventional digital signal processing such as digital signal processing and fast fourier<br>transform , spectral substation can classify the sound.Automatic detection of abnormal sound was a hot<br>topic in the past several years among researchers for the audio and video based surveillance purpose.<br>● Private and public system has a huge impact due to audio surveillance.<br>● Most of the security forces use images in order to detect any crime occurrences such as gunshot and<br>glass breaking.<br>● This video surveillance is complemented by the audio signals to provide or behave intelligently.<br>● Audio systems can work even in the dark environment more reliably where the camera or vision is<br>failing to do its job.<br>● Using both the audio and video makes robust systems.<br>● Multiple cases were considered for audio surveillance systems such as gunshot, screaming, glass<br>breaking, knocking on a door, talking, footsteps/sound of walking, etc.<br>● Here audio can be used as a supporting agent to the video based knowledge gatherings.<br>● The cost of an audio based system is comparable to the video based system.<br>● The main stages in constructing the surveillance system is to extract the features that will help to find<br>the difference between the normal and the abnormal events.<br>● MFCC (Mel frequency Cepstrum Coefficients) are widely used features for the audio representation.<br>● There is a problem of using only MFCC for recognition. It gives poor results.<br>● We can improve the accuracy of the classification by considering multiple features of the sound<br>together with the MFCC.<br>● At the front of the system feature extraction is done and on the background classification is done.<br>● Traditional classification involves Hidden Markov Models(HMMs), Gaussian Mixture Models (GMM),<br>Artificial neural networks (ANN) and Support Vector Machines (SVMs).<br>● There was a previous study related to the abnormal sound detection using an MFCC feature set.<br>● The dataset studied had four main classes namely explosion, gunshot, screaming as an abnormal<br>sound.<br>● Author has used HMM for the classification purpose that yielded a 93.3% correct classification.<br>● There was a study related to the hybrid audio analysis framework for audio surveillance.<br>● The study included mainly two parts first is the audio classification framework analysis and<br>unsupervised audio analysis.<br>● The dataset consists of 126 clips with the suspicious events 4 clips without any event.<br>● The extracted 12 MFCC features for an 8 milliseconds of audio data.<br>● Gaussian mixture models (GMMs) are applied on the data and yield a recognition rate of 85%.<br>● Here the author has used a 2 dimensional feature set for audio surveillance systems.<br>● Using the pitch range(PR) of the sound the new features are detected.<br>● The result of the proposed model is compared with the 13 dimensional MFCC feature set 1 energy and<br>12 MFCC coefficients.<br>● The dataset used to test the model has 4 abnormal events namely glass breaking, dog barking, scream<br>and gunshot and three normal events namely engine noise, rain and restaurant noise.<br>● Author has used support vector machines(SVMs) and Radial Basis Function(RBF) neural networks to<br>use a classifier.<br>● The proposed architecture feature extraction method helps to characterise different non speech<br>sounds in the time domain while the MFCC feature set characterize it in the<br>frequency domain.<br>● A new feature extraction technique is proposed in the paper that is based on the pitch range of non<br>speech environmental sounds and they have used Autocorrelation function<br>(ACF).<br>● Pitch is a perceptual feature of sound and it plays a major role in the human auditory system.<br>● Human listeners are able to recognize the pitch of several real time sounds.<br>● Some of the environmental sounds such as a fan, a scream, a gunshot or a glass breaking don’t have a<br>constant pitch value but a range of values.<br>● The additional steps beyond frame by frame pitch detection is done to enhance the quality of the<br>measure pitch.<br>● The ACF technique generates the pitch of the signal that involves the tracking errors.<br>● If the input signal changes its pitch during an analysis frame the pitch measurement may be wrong.<br>● The non acoustic speech audio signal changes their acoustical characteristics in time, PR-based feature<br>main focuses on the pitch of the noise signal.<br>● ACF actually contains the more detailed structure of the sound.<br>● Since it contains the energy it emphasizes periodicity.<br>● The quantity finds the shift of the window and it results in the analysis time.<br>● Index k is called the autocorrelation lag index and it tells the amount of the shift in the sequences.<br>● Each pitch of the sound has different characteristics in the time domain.<br>● A wide frequency band will cover harmonics as we are impulsive sounds.<br>● Most of the audio signals change their acoustical characteristics very quickly.<br>● They have applied 2.1 millisecond rectangular windows with 50% overlap to each sound inorder to find<br>the pitch range.<br>● MFCC are mainly used for audio surveillance purposes in order to find abnormal events.<br>● If MFCC are used for extracting the information important to the structure of the original speech.<br>● MFCC are extracted based on the ETSI aurora extended front End standard.<br>● During the information extraction process the phase information is being lost in the magnitude<br>operation.<br>● Since the mel scale filter bank channels are non uniform spacing the lowest frequency filter bank<br>channel has the best possible frequency resolution of 64Hz.<br>● As the higher the filter bank channels the frequency resolution will be getting worse.<br>● This will have a bad effect on the classification system having audio signals related to the gunshot,<br>screams glass braking dog barking and the engine because they have high<br>frequency components.<br>● In this approach SVMs and RBF neural networks which is a type of artificial neural networks(ANNs)<br>have been studied extensively and the same is used in the<br>classification process in this field.<br>● For the hard classification problem usually SVMs are used like the problem arising in the speech<br>recognition visual object classification , text classification.<br>● Initially SVMs are designed as the binary classification method and it finds the optimal separating<br>boundary between the two classes by maximizing the distance between the<br>closest points of the classes to the separating hyperplane. This is the reason it is also called as the<br>maximum margin classifier.<br>● By maximizing the distance between the two classes in the training dataset will lead to improved<br>classification accuracy on the test data especially while using high dimensional<br>spaces when we use the limited number of samples.<br>● The margin between classes is found by determining the nearest data samples that are also called as<br>the support vectors.<br>● It is to make sure that the SVMs are usually designed for the binary classification and extending the<br>saem approach to the multiclass makes the problem more complex.<br>● Here multi class is built by making multiple binary classification and finally combining all of the results<br>together.<br>● There exist multiple ways to achieve this first in three ways.<br>● Namely one against rest , one against one and directed acyclic graphs.<br>● For the one against rest strategy test, separate the one class from the remaining C-1 classes.<br>● The one against all strategy construct all the C(C-1)/2 binary classifiers out of C classes.<br>● The one against one classifier casts one vote for its preferential class.<br>● The directed acyclic graph trains in a fashion that C(C-1)/2 binary classifiers and it uses directed acyclic<br>graphs during the testing process.<br>● The typical RBF network has three layers namely input, hidden and output layers.<br>● The input node is made up of source nodes that connect all the coordinates of the input vector.<br>● The hidden layers consist of processing units called the hidden basis functions units which are found at<br>the centre of the clusters.<br>● Every hidden layer node adopts into radial activation functions and the output nodes implement a<br>weighted sum of hidden units.<br>● The output layer is linear and it helps us to predict the class labels based on the response of the<br>hidden units.<br>● The RBF is multi input and multi output in nature.<br>● The performance of the RBF network depends on the number and initial locations of the hidden units.<br>● SVM and RBF are applied to the extracted features above that MFCC features also tested.<br>● In this work 258 audio event samples were used for the classification purpose.<br>● It is found that the neural network classifier usually outperforms the SVM classifier using the linear<br>kernel but using the SVM classifier using the gaussian kernel gave good<br>results.<br>● The most remarkable achievement is by utilizing the OAR strategy which yielded an improvement<br>accuracy of 19.4%.<br>● These tell us that the PR based feature has different information compared to the MFCC features of<br>non signal audio signal.<br>● Using RBF network the accuracy is found to be 55.04% for the PR based classifier against the 7015% for<br>the MFCCs classifiers.<br>● The MFCC improved the classification accuracy in the range of 4% to 35%.<br>● Using the MFCCs and PR based feature set the test accuracy is calculated around 81.8%.<br>● The proposed 2 dimensional PR-based features =set provides high accuracy rates as a classifier.<br>● The usual along with MFCCs significantly improved the accuracy rate given the classifiers of 4% to 35%<br>depending on the classifiers.<br>● In this architecture temporal characteristics of the sound is not taken into account during classification.<br>● Environmental sounds are non stationary in characteristics so multiple features need to be taken into<br>consideration while making the classification.<br>● Only spectral characteristics of the sound are considered for classification. This yielded in a poor<br>accuracy.<br>● If temporal characteristics are also taken into account then accuracy could be increased.<br>● Hence from this we can find that by using only spectral characteristics we achieved a reasonable<br>accuracy in classifying the environmental sound.</td>
+</tr>
+<tr id="bib_uzkent2012non" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{uzkent2012non,
+  author = {Uzkent, Burak and Barkana, Buket D and Cevikalp, Hakan},
+  title = {Non-speech environmental sound classification using SVMs with a new set of features},
+  journal = {International Journal of Innovative Computing, Information and Control},
+  year = {2012},
+  volume = {8},
+  number = {5},
+  pages = {3511--3524},
+  url = {https://www.researchgate.net/profile/Hakan_Cevikalp/publication/267782696_Non-speech_environmental_sound_classification_using_SVMs_with_a_new_set_of_features/links/54b7bf9f0cf24eb34f6ed7ff/Non-speech-environmental-sound-classification-using-SVMs-with-a-new-set-of-features.pdf}
+}
+</pre></td>
+</tr>
+<tr id="vaswani2017attention" class="entry">
+	<td>Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A.N., Kaiser, &Lstrok;. and Polosukhin, I.</td>
+	<td>Attention is all you need <p class="infolinks">[<a href="javascript:toggleInfo('vaswani2017attention','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('vaswani2017attention','comment')">Comment</a>] [<a href="javascript:toggleInfo('vaswani2017attention','bibtex')">BibTeX</a>]</p></td>
+	<td>2017</td>
+	<td>Advances in neural information processing systems, pp. 5998-6008&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://papers.nips.cc/paper/7181-attention-is-all-you-need.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_vaswani2017attention" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: The dominant sequence transduction models are based on complex recurrent orconvolutional neural networks in an encoder and decoder configuration. The best performing such models also connect the encoder and decoder through an attentionm echanisms. We propose a novel, simple network architecture based solely onan attention mechanism, dispensing with recurrence and convolutions entirely.Experiments on two machine translation tasks show these models to be superiorin quality while being more parallelizable and requiring significantly less timeto train. Our single model with 165 million parameters, achieves 27.5 BLEU onEnglish-to-German translation, improving over the existing best ensemble result by over 1 BLEU. On English-to-French translation, we outperform the previoussingle state-of-the-art with model by 0.7 BLEU, achieving a BLEU score of 41.1.</td>
+</tr>
+<tr id="rev_vaswani2017attention" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Attention all you need. Citations - 11370</td>
+</tr>
+<tr id="bib_vaswani2017attention" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{vaswani2017attention,
+  author = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, &Lstrok;ukasz and Polosukhin, Illia},
+  title = {Attention is all you need},
+  booktitle = {Advances in neural information processing systems},
+  year = {2017},
+  pages = {5998--6008},
+  url = {https://papers.nips.cc/paper/7181-attention-is-all-you-need.pdf}
+}
+</pre></td>
+</tr>
+<tr id="wang2019learning" class="entry">
+	<td>Wang, H., Zou, Y., Chong, D. and Wang, W.</td>
+	<td>Learning discriminative and robust time-frequency representations for environmental sound classification <p class="infolinks">[<a href="javascript:toggleInfo('wang2019learning','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('wang2019learning','comment')">Comment</a>] [<a href="javascript:toggleInfo('wang2019learning','bibtex')">BibTeX</a>]</p></td>
+	<td>2019</td>
+	<td>arXiv preprint arXiv:1912.06808&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://arxiv.org/pdf/1912.06808">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_wang2019learning" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Convolutional neural networks (CNN) are one of the best-performing neural network architectures for environmental sound classification (ESC). Recently, temporal attention mechanisms have been used in CNN to capture the useful information from the relevant time frames for audio classification, especially for weakly labelled data where the onset and offset times of the sound events are not applied. In these methods, however, the inherent spectral characteristics and variations are not explicitly exploited when obtaining the deep features. In this paper, we propose a novel parallel temporal-spectral attention mechanism for CNN to learn discriminative sound representations, which enhances the temporal and spectral features by capturing the importance of different time frames and frequency bands. Parallel branches are constructed to allow temporal attention and spectral attention to be applied respectively in order to mitigate interference from the segments without the presence of sound events. The experiments on three environmental sound classification (ESC) datasets and two acoustic scene classification (ASC) datasets show that our method improves the classification performance and also exhibits robustness to noise.</td>
+</tr>
+<tr id="rev_wang2019learning" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Time- frequency reprsentations for ESC. Citations - 2</td>
+</tr>
+<tr id="bib_wang2019learning" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{wang2019learning,
+  author = {Wang, Helin and Zou, Yuexian and Chong, Dading and Wang, Wenwu},
+  title = {Learning discriminative and robust time-frequency representations for environmental sound classification},
+  journal = {arXiv preprint arXiv:1912.06808},
+  year = {2019},
+  url = {https://arxiv.org/pdf/1912.06808}
+}
+</pre></td>
+</tr>
+<tr id="zhang2018deep" class="entry">
+	<td>Zhang, Z., Xu, S., Cao, S. and Zhang, S.</td>
+	<td>Deep convolutional neural network with mixup for environmental sound classification <p class="infolinks">[<a href="javascript:toggleInfo('zhang2018deep','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('zhang2018deep','comment')">Comment</a>] [<a href="javascript:toggleInfo('zhang2018deep','bibtex')">BibTeX</a>]</p></td>
+	<td>2018</td>
+	<td>Chinese Conference on Pattern Recognition and Computer Vision (PRCV), pp. 356-367&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://arxiv.org/pdf/1808.08405">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_zhang2018deep" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Environmental sound classification (ESC) is an important and challenging problem. In contrast to speech, sound events have noise-like nature and may be produced by a wide variety of sources. In this paper, we propose to use a novel deep convolutional neural network for ESC tasks. Our network architecture uses stacked convolutional and pooling layers to extract high-level feature representations from spectrogram-like features. Furthermore, we apply mixup to ESC tasks and explore its impacts on classification performance and feature distribution. Experiments were conducted on UrbanSound8K, ESC-50 and ESC-10 datasets. Our experimental results demonstrated that our ESC system has achieved the state-of-the-art performance (83.7  % ) on UrbanSound8K and competitive performance on ESC-50 and ESC-10.</td>
+</tr>
+<tr id="rev_zhang2018deep" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: DNN for ESC task. Citations - 31</td>
+</tr>
+<tr id="bib_zhang2018deep" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{zhang2018deep,
+  author = {Zhang, Zhichao and Xu, Shugong and Cao, Shan and Zhang, Shunqing},
+  title = {Deep convolutional neural network with mixup for environmental sound classification},
+  booktitle = {Chinese Conference on Pattern Recognition and Computer Vision (PRCV)},
+  year = {2018},
+  pages = {356--367},
+  url = {https://arxiv.org/pdf/1808.08405}
+}
+</pre></td>
+</tr>
+<tr id="zhang2019learning" class="entry">
+	<td>Zhang, Z., Xu, S., Zhang, S., Qiao, T. and Cao, S.</td>
+	<td>Learning attentive representations for environmental sound classification <p class="infolinks">[<a href="javascript:toggleInfo('zhang2019learning','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('zhang2019learning','comment')">Comment</a>] [<a href="javascript:toggleInfo('zhang2019learning','bibtex')">BibTeX</a>]</p></td>
+	<td>2019</td>
+	<td>IEEE Access<br/>Vol. 7, pp. 130327-130339&nbsp;</td>
+	<td>article</td>
+	<td><a href="https://ieeexplore.ieee.org/iel7/6287639/8600701/08823934.pdf">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_zhang2019learning" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Environmental sound classification (ESC) is a challenging problem due to the complex temporal structure and diverse energy modulation patterns of environmental sounds. In order to deal with the former, temporal attention mechanism is originally adopted to focus on the informative frames. However, no existing works pay attention to the latter problem. In this paper, we consider the role of convolution filters in detecting energy modulation patterns and propose a channel attention mechanism to focus on the semantically relevant channels generated by corresponding filters. Furthermore, we incorporate the temporal attention and channel attention to enhance the representative power of CNN via generating complementary information. In addition, to avoid possible overfitting caused by limited training data, we explore a data augmentation scheme that is other contribution in this paper. We evaluate our proposed method on three benchmark ESC datasets: ESC-10 and ESC-50 and DCASE2016. Experimental results show the effectiveness of proposed method and achieve the state-of-the-art or competitive results in terms of classification accuracy. Finally, we visualize our attention results and observe that the proposed attention mechanism is able to lead the network to focus on the semantically relevant parts of environmental sounds.</td>
+</tr>
+<tr id="rev_zhang2019learning" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: Attentive representation for ESC. Citations - 6</td>
+</tr>
+<tr id="bib_zhang2019learning" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{zhang2019learning,
+  author = {Zhang, Zhichao and Xu, Shugong and Zhang, Shunqing and Qiao, Tianhao and Cao, Shan},
+  title = {Learning attentive representations for environmental sound classification},
+  journal = {IEEE Access},
+  publisher = {IEEE},
+  year = {2019},
+  volume = {7},
+  pages = {130327--130339},
+  url = {https://ieeexplore.ieee.org/iel7/6287639/8600701/08823934.pdf}
+}
+</pre></td>
+</tr>
+<tr id="zhu2018environmental" class="entry">
+	<td>Zhu, B., Xu, K., Wang, D., Zhang, L., Li, B. and Peng, Y.</td>
+	<td>Environmental sound classification based on multi-temporal resolution convolutional neural network combining with multi-level features <p class="infolinks">[<a href="javascript:toggleInfo('zhu2018environmental','abstract')">Abstract</a>] [<a href="javascript:toggleInfo('zhu2018environmental','comment')">Comment</a>] [<a href="javascript:toggleInfo('zhu2018environmental','bibtex')">BibTeX</a>]</p></td>
+	<td>2018</td>
+	<td>Pacific Rim Conference on Multimedia, pp. 528-537&nbsp;</td>
+	<td>inproceedings</td>
+	<td><a href="https://arxiv.org/pdf/1805.09752">URL</a>&nbsp;</td>
+</tr>
+<tr id="abs_zhu2018environmental" class="abstract noshow">
+	<td colspan="6"><b>Abstract</b>: Motivated by the fact that characteristics of different sound classes are highly diverse in different temporal scales and hierarchical levels, a novel deep convolutional neural network (CNN) architecture is proposed for the environmental sound classification task. This network architecture takes raw waveforms as input, and a set of separated parallel CNNs are utilized with different convolutional filter sizes and strides, in order to learn feature representations with multi-temporal resolutions. On the other hand, the proposed architecture also aggregates hierarchical features from multi-level CNN layers for classification using direct connections between convolutional layers, which is beyond the typical single-level CNN features employed by the majority of previous studies. This network architecture also improves the flow of information and avoids vanishing gradient problem. The combination of multi-level features boosts the classification performance significantly. Comparative experiments are conducted on two datasets: the environmental sound classification dataset (ESC-50), and DCASE 2017 audio scene classification dataset. Results demonstrate that the proposed method is highly effective in the classification tasks by employing multi-temporal resolution and multi-level features, and it outperforms the previous methods which only account for single-level features.</td>
+</tr>
+<tr id="rev_zhu2018environmental" class="comment noshow">
+	<td colspan="6"><b>Comment</b>: ESC based on multi temporal resolution CNN. CItations - 9</td>
+</tr>
+<tr id="bib_zhu2018environmental" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@inproceedings{zhu2018environmental,
+  author = {Zhu, Boqing and Xu, Kele and Wang, Dezhi and Zhang, Lilun and Li, Bo and Peng, Yuxing},
+  title = {Environmental sound classification based on multi-temporal resolution convolutional neural network combining with multi-level features},
+  booktitle = {Pacific Rim Conference on Multimedia},
+  year = {2018},
+  pages = {528--537},
+  url = {https://arxiv.org/pdf/1805.09752}
+}
+</pre></td>
+</tr>
+<tr id="" class="entry">
+	<td></td>
+	<td> <p class="infolinks">[<a href="javascript:toggleInfo('','bibtex')">BibTeX</a>]</p></td>
+	<td></td>
+	<td>&nbsp;</td>
+	<td>article</td>
+	<td>&nbsp;</td>
+</tr>
+<tr id="bib_" class="bibtex noshow">
+<td colspan="6"><b>BibTeX</b>:
+<pre>
+@article{,
+}
+</pre></td>
+</tr>
+</tbody>
+</table>
+<footer>
+ <small>Created by <a href="http://jabref.sourceforge.net">JabRef</a> on 27/08/2020.</small>
+</footer>
+<!-- file generated by JabRef -->
+</body>
+</html>

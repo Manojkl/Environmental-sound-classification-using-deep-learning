@@ -20,7 +20,7 @@ In context of neural network, embeddings are low dimensional. For ex, image pixe
 - It refers to the classification of the sound that we encounter in everyday life
 
 9. FLOPS
-- Floting point operation per seconds
+- Floating point operation per seconds
 
 10. Inception model
 
@@ -36,7 +36,7 @@ This is the intuition behind the notion and you can make it into a definition be
 
 In the theory of vector spaces, a set of vectors is said to be linearly dependent if at least one of the vectors in the set can be defined as a linear combination of the others; if no vector in the set can be written in this way, then the vectors are said to be linearly independent.
 
-For example consider going in north direction for 1m(say x1) from the origin. Then you get a vector. Now you can reach x1 by starting from origin and going with 45 degree from north and again goin into west you will reach x1. This will give us two vectors. So this condition is true then it is called as linear dependent.
+For example consider going in north direction for 1m(say x1) from the origin. Then you get a vector. Now you can reach x1 by starting from origin and going with 45 degree from north and again going into west you will reach x1. This will give us two vectors. So this condition is true then it is called as linear dependent.
 
 14. Stationary and non stationary sound
 
@@ -54,4 +54,14 @@ For example consider going in north direction for 1m(say x1) from the origin. Th
 
 19. Handcrafted features
 
-20. Proection coefficients
+20. Prediction coefficients, Linear predictive coding
+
+Linear predictive coding is a method used mostly in audio signal processing and speech processing for representing the spectral envelope of a digital signal of speech in compressed form using the information of a linear predictive model. 
+
+21. Conditional random field
+
+22. Hidden Markov field
+
+23. 
+
+
