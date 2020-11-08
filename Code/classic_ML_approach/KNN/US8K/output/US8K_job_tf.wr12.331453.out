@@ -1,0 +1,52 @@
+------------------------------------------------
+                                                
+Training...........................
+Train score: 0.9223335719398712
+Validation...........................
+Validation score: 0.8503937007874016
+Testing...........................
+Test score: 0.8551803091013166
+Classification report KNN default parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.96      0.82      0.88       237
+        car_horn       0.67      0.81      0.73        77
+children_playing       0.88      0.76      0.82       241
+        dog_bark       0.67      0.88      0.76       141
+        drilling       0.88      0.93      0.91       169
+   engine_idling       0.92      0.91      0.91       201
+        gun_shot       0.79      0.64      0.71        85
+      jackhammer       0.98      0.92      0.95       214
+           siren       0.91      0.92      0.91       196
+    street_music       0.75      0.85      0.79       186
+
+        accuracy                           0.86      1747
+       macro avg       0.84      0.84      0.84      1747
+    weighted avg       0.87      0.86      0.86      1747
+
+------------------------------------------------
+                                                
+Optimizing...........................................
+Fitting 8 folds for each of 40 candidates, totalling 320 fits
+KNN best score= 0.9345750404323974
+KNN best estimator= KNeighborsClassifier(metric='euclidean', n_neighbors=1)
+Testing...........................
+Test score: 0.9484831139095592
+Classification report KNN optimized parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.98      0.99      0.98       202
+        car_horn       0.84      0.96      0.90        81
+children_playing       0.95      0.89      0.92       224
+        dog_bark       0.88      0.95      0.91       171
+        drilling       0.97      0.97      0.97       180
+   engine_idling       0.98      0.98      0.98       200
+        gun_shot       0.91      0.84      0.87        74
+      jackhammer       0.98      0.95      0.97       207
+           siren       0.97      0.96      0.96       200
+    street_music       0.93      0.95      0.94       208
+
+        accuracy                           0.95      1747
+       macro avg       0.94      0.94      0.94      1747
+    weighted avg       0.95      0.95      0.95      1747
+
