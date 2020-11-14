@@ -1,0 +1,28 @@
+------------------------------------------------
+                                                
+------------------------------------------------
+                                                
+ Naive Bayes ... 
+Training...........................
+Train score: 0.6860134021280695
+Validation...........................
+Validation score: 0.6861620140435006
+Testing...........................
+Test score: 0.6858258546276632
+Classification report NB default parameter.....................
+                 precision    recall  f1-score   support
+
+        absence       0.63      0.58      0.61      4089
+        cooking       0.78      0.76      0.77      1061
+    dishwashing       0.36      0.25      0.29       407
+         eating       0.25      0.24      0.24       494
+          other       0.27      0.27      0.27       421
+social_activity       0.77      0.81      0.79       914
+ vacuum_cleaner       1.00      0.99      1.00       203
+    watching_tv       0.98      1.00      0.99      3652
+        working       0.51      0.57      0.54      3356
+
+       accuracy                           0.69     14597
+      macro avg       0.62      0.61      0.61     14597
+   weighted avg       0.68      0.69      0.68     14597
+

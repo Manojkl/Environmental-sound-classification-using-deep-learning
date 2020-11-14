@@ -1,0 +1,29 @@
+------------------------------------------------
+                                                
+------------------------------------------------
+                                                
+ Naive Bayes ... 
+Training...........................
+Train score: 0.44523979957050824
+Validation...........................
+Validation score: 0.4302075876879026
+Testing...........................
+Test score: 0.42472810532341154
+Classification report NB default parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.45      0.37      0.41       251
+        car_horn       0.28      0.43      0.34        60
+children_playing       0.39      0.38      0.38       216
+        dog_bark       0.27      0.50      0.35       101
+        drilling       0.52      0.38      0.44       247
+   engine_idling       0.44      0.54      0.48       160
+        gun_shot       0.51      0.20      0.29       175
+      jackhammer       0.59      0.46      0.52       259
+           siren       0.54      0.77      0.63       137
+    street_music       0.25      0.38      0.30       141
+
+        accuracy                           0.42      1747
+       macro avg       0.42      0.44      0.41      1747
+    weighted avg       0.45      0.42      0.42      1747
+
