@@ -1,0 +1,51 @@
+------------------------------------------------
+                                                
+ Random Forest ... 
+------------------------------------------------
+                                                
+Training...........................
+Train score: 1.0
+Validation...........................
+Validation score: 0.9192498715533481
+Testing...........................
+Test score: 0.9151880523395218
+Classification report RF default parameter.....................
+                 precision    recall  f1-score   support
+
+        absence       0.95      0.88      0.92      4040
+        cooking       0.96      0.93      0.95      1066
+    dishwashing       0.64      0.73      0.68       252
+         eating       0.65      0.85      0.74       360
+          other       0.36      0.77      0.49       200
+social_activity       0.91      0.94      0.93       932
+ vacuum_cleaner       1.00      1.00      1.00       201
+    watching_tv       1.00      1.00      1.00      3716
+        working       0.90      0.88      0.89      3830
+
+       accuracy                           0.92     14597
+      macro avg       0.82      0.89      0.84     14597
+   weighted avg       0.93      0.92      0.92     14597
+
+Optimizing...........................................
+Fitting 8 folds for each of 500 candidates, totalling 4000 fits
+RF best score= 0.9221058974468435
+RF best estimator= RandomForestClassifier(max_depth=30, n_estimators=500)
+Testing...........................
+Test score: 0.9209426594505721
+Classification report RF=andom forest optimized parameter.....................
+                 precision    recall  f1-score   support
+
+        absence       0.96      0.89      0.92      4057
+        cooking       0.96      0.94      0.95      1055
+    dishwashing       0.64      0.77      0.70       239
+         eating       0.68      0.88      0.77       358
+          other       0.40      0.77      0.53       221
+social_activity       0.92      0.95      0.93       936
+ vacuum_cleaner       1.00      1.00      1.00       201
+    watching_tv       1.00      1.00      1.00      3715
+        working       0.90      0.89      0.89      3815
+
+       accuracy                           0.92     14597
+      macro avg       0.83      0.90      0.85     14597
+   weighted avg       0.93      0.92      0.92     14597
+

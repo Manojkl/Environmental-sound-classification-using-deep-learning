@@ -1,0 +1,53 @@
+------------------------------------------------
+                                                
+ Random Forest ... 
+------------------------------------------------
+                                                
+Training...........................
+Train score: 1.0
+Validation...........................
+Validation score: 0.8854688618468146
+Testing...........................
+Test score: 0.8786491127647396
+Classification report RF default parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.95      0.94      0.94       205
+        car_horn       0.63      0.94      0.76        63
+children_playing       0.85      0.78      0.82       227
+        dog_bark       0.80      0.81      0.81       182
+        drilling       0.90      0.89      0.90       182
+   engine_idling       0.96      0.94      0.95       204
+        gun_shot       0.71      0.91      0.79        53
+      jackhammer       0.98      0.91      0.94       217
+           siren       0.92      0.94      0.93       193
+    street_music       0.84      0.81      0.82       221
+
+        accuracy                           0.88      1747
+       macro avg       0.85      0.89      0.87      1747
+    weighted avg       0.89      0.88      0.88      1747
+
+Optimizing...........................................
+Fitting 8 folds for each of 500 candidates, totalling 4000 fits
+RF best score= 0.9022184738703174
+RF best estimator= RandomForestClassifier(max_depth=30, n_estimators=500)
+Testing...........................
+Test score: 0.9089868345735547
+Classification report RF=andom forest optimized parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.97      0.96      0.96       205
+        car_horn       0.72      1.00      0.84        67
+children_playing       0.88      0.83      0.85       222
+        dog_bark       0.86      0.86      0.86       184
+        drilling       0.93      0.92      0.92       182
+   engine_idling       0.96      0.96      0.96       200
+        gun_shot       0.72      0.94      0.82        52
+      jackhammer       0.98      0.96      0.97       206
+           siren       0.94      0.95      0.94       196
+    street_music       0.91      0.82      0.86       233
+
+        accuracy                           0.91      1747
+       macro avg       0.89      0.92      0.90      1747
+    weighted avg       0.91      0.91      0.91      1747
+
