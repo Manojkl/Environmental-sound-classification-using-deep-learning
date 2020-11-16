@@ -1,0 +1,52 @@
+------------------------------------------------
+                                                
+ Gradient Boosting ... 
+------------------------------------------------
+                                                
+Training...........................
+Train score: 0.8994626303282023
+Validation...........................
+Validation score: 0.8800308271964378
+Testing...........................
+Test score: 0.8807289169007331
+Classification report GBC default parameter.....................
+                 precision    recall  f1-score   support
+
+        absence       0.91      0.83      0.87      4088
+        cooking       0.95      0.92      0.94      1074
+    dishwashing       0.52      0.61      0.57       244
+         eating       0.58      0.77      0.66       351
+          other       0.31      0.67      0.42       198
+social_activity       0.90      0.93      0.91       933
+ vacuum_cleaner       0.99      1.00      0.99       198
+    watching_tv       1.00      1.00      1.00      3720
+        working       0.84      0.83      0.83      3791
+
+       accuracy                           0.88     14597
+      macro avg       0.78      0.84      0.80     14597
+   weighted avg       0.89      0.88      0.89     14597
+
+------------------------------------------------
+                                                
+GBC best score= 0.932142419866959
+GBC best estimator= GradientBoostingClassifier(learning_rate=0.15, max_depth=15,
+                           min_samples_leaf=70, min_samples_split=200)
+Testing...........................
+Test score: 0.9334109748578475
+Classification report GBC optimized parameter.....................
+                 precision    recall  f1-score   support
+
+        absence       0.97      0.91      0.94      3971
+        cooking       0.96      0.96      0.96      1031
+    dishwashing       0.67      0.75      0.71       259
+         eating       0.75      0.90      0.81       389
+          other       0.45      0.67      0.54       286
+social_activity       0.93      0.96      0.95       930
+ vacuum_cleaner       1.00      1.00      1.00       201
+    watching_tv       1.00      1.00      1.00      3718
+        working       0.92      0.91      0.91      3812
+
+       accuracy                           0.93     14597
+      macro avg       0.85      0.90      0.87     14597
+   weighted avg       0.94      0.93      0.94     14597
+

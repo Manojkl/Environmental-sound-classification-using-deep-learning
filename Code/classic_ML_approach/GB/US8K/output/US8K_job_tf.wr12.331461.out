@@ -1,0 +1,54 @@
+------------------------------------------------
+                                                
+ Gradient Boosting ... 
+------------------------------------------------
+                                                
+Training...........................
+Train score: 0.9173228346456693
+Validation...........................
+Validation score: 0.7709377236936292
+Testing...........................
+Test score: 0.7664567830566685
+Classification report GBC default parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.86      0.85      0.86       205
+        car_horn       0.57      0.83      0.68        64
+children_playing       0.69      0.65      0.67       220
+        dog_bark       0.70      0.71      0.70       182
+        drilling       0.78      0.78      0.78       180
+   engine_idling       0.89      0.81      0.85       221
+        gun_shot       0.65      0.85      0.73        52
+      jackhammer       0.94      0.81      0.87       232
+           siren       0.78      0.84      0.81       184
+    street_music       0.63      0.64      0.63       207
+
+        accuracy                           0.77      1747
+       macro avg       0.75      0.78      0.76      1747
+    weighted avg       0.78      0.77      0.77      1747
+
+------------------------------------------------
+                                                
+GBC best score= 0.9002138919688284
+GBC best estimator= GradientBoostingClassifier(learning_rate=0.2, max_depth=13, min_samples_leaf=70,
+                           min_samples_split=200)
+Testing...........................
+Test score: 0.9055523755008587
+Classification report GBC optimized parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.97      0.96      0.96       205
+        car_horn       0.73      0.96      0.83        71
+children_playing       0.87      0.85      0.86       213
+        dog_bark       0.88      0.84      0.86       194
+        drilling       0.93      0.89      0.91       188
+   engine_idling       0.97      0.97      0.97       199
+        gun_shot       0.72      0.92      0.81        53
+      jackhammer       0.97      0.93      0.95       210
+           siren       0.92      0.96      0.94       189
+    street_music       0.89      0.84      0.86       225
+
+        accuracy                           0.91      1747
+       macro avg       0.88      0.91      0.89      1747
+    weighted avg       0.91      0.91      0.91      1747
+
