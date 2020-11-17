@@ -1,0 +1,61 @@
+------------------------------------------------
+                                                
+ XGBOOST ... 
+Training...........................
+Train score: 1.0
+Validation...........................
+Validation score: 0.870436649964209
+Testing...........................
+Test score: 0.8809387521465369
+Classification report XGB default parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.93      0.94      0.94       200
+        car_horn       0.69      0.91      0.79        70
+children_playing       0.86      0.80      0.83       223
+        dog_bark       0.83      0.82      0.82       187
+        drilling       0.93      0.88      0.90       192
+   engine_idling       0.95      0.95      0.95       199
+        gun_shot       0.74      0.88      0.80        57
+      jackhammer       0.98      0.93      0.95       211
+           siren       0.88      0.91      0.89       192
+    street_music       0.83      0.82      0.83       216
+
+        accuracy                           0.88      1747
+       macro avg       0.86      0.88      0.87      1747
+    weighted avg       0.88      0.88      0.88      1747
+
+------------------------------------------------
+                                                
+Optimizing...........................................
+Fitting 8 folds for each of 405 candidates, totalling 3240 fits
+XGB best score= 0.8654259752923321
+XGB best estimator= XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
+              colsample_bynode=1, colsample_bytree=1.0, gamma=0.5, gpu_id=-1,
+              importance_type='gain', interaction_constraints='',
+              learning_rate=0.300000012, max_delta_step=0, max_depth=5,
+              min_child_weight=1, missing=nan, monotone_constraints='()',
+              n_estimators=100, n_jobs=0, num_parallel_tree=1,
+              objective='multi:softprob', random_state=0, reg_alpha=0,
+              reg_lambda=1, scale_pos_weight=None, subsample=0.6,
+              tree_method='exact', validate_parameters=1, verbosity=None)
+Testing...........................
+Test score: 0.8786491127647396
+Classification report XGB optimized parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.95      0.93      0.94       206
+        car_horn       0.71      0.92      0.80        72
+children_playing       0.84      0.78      0.81       223
+        dog_bark       0.82      0.82      0.82       185
+        drilling       0.89      0.88      0.89       182
+   engine_idling       0.96      0.96      0.96       199
+        gun_shot       0.76      0.90      0.83        58
+      jackhammer       0.97      0.90      0.93       217
+           siren       0.87      0.91      0.89       190
+    street_music       0.84      0.83      0.84       215
+
+        accuracy                           0.88      1747
+       macro avg       0.86      0.88      0.87      1747
+    weighted avg       0.88      0.88      0.88      1747
+

@@ -1,0 +1,59 @@
+------------------------------------------------
+                                                
+ XGBOOST ... 
+Training...........................
+Train score: 0.9918431137468154
+Validation...........................
+Validation score: 0.9250727864360335
+Testing...........................
+Test score: 0.9239569774611222
+Classification report XGB default parameter.....................
+                 precision    recall  f1-score   support
+
+        absence       0.95      0.90      0.93      3971
+        cooking       0.96      0.95      0.96      1041
+    dishwashing       0.67      0.72      0.69       268
+         eating       0.75      0.87      0.80       402
+          other       0.41      0.69      0.52       255
+social_activity       0.93      0.96      0.94       932
+ vacuum_cleaner       1.00      1.00      1.00       201
+    watching_tv       1.00      1.00      1.00      3721
+        working       0.91      0.89      0.90      3806
+
+       accuracy                           0.92     14597
+      macro avg       0.84      0.89      0.86     14597
+   weighted avg       0.93      0.92      0.93     14597
+
+------------------------------------------------
+                                                
+Optimizing...........................................
+Fitting 8 folds for each of 405 candidates, totalling 3240 fits
+XGB best score= 0.9213693872554347
+XGB best estimator= XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
+              colsample_bynode=1, colsample_bytree=1.0, gamma=0.5, gpu_id=-1,
+              importance_type='gain', interaction_constraints='',
+              learning_rate=0.300000012, max_delta_step=0, max_depth=5,
+              min_child_weight=1, missing=nan, monotone_constraints='()',
+              n_estimators=100, n_jobs=0, num_parallel_tree=1,
+              objective='multi:softprob', random_state=0, reg_alpha=0,
+              reg_lambda=1, scale_pos_weight=None, subsample=0.8,
+              tree_method='exact', validate_parameters=1, verbosity=None)
+Testing...........................
+Test score: 0.9229293690484346
+Classification report XGB optimized parameter.....................
+                 precision    recall  f1-score   support
+
+        absence       0.95      0.89      0.92      4000
+        cooking       0.96      0.96      0.96      1035
+    dishwashing       0.70      0.77      0.73       261
+         eating       0.74      0.86      0.79       400
+          other       0.43      0.73      0.54       247
+social_activity       0.93      0.96      0.94       943
+ vacuum_cleaner       1.00      1.00      1.00       201
+    watching_tv       1.00      1.00      1.00      3720
+        working       0.90      0.89      0.89      3790
+
+       accuracy                           0.92     14597
+      macro avg       0.85      0.90      0.86     14597
+   weighted avg       0.93      0.92      0.93     14597
+
