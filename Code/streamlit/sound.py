@@ -3,7 +3,7 @@ import pyaudio, wave, pylab
 import numpy as np
 import librosa, librosa.display
 import matplotlib.pyplot as plt
-# from pygame import mixer
+from pygame import mixer
 from scipy.io.wavfile import write
 # from settings import settings
 from settings import DURATION, DEFAULT_SAMPLE_RATE, MAX_INPUT_CHANNELS, \
