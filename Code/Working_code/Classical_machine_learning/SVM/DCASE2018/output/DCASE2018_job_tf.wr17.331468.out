@@ -1,0 +1,70 @@
+SVM default parameter..................................................
+Train score for default: 0.9021387741120555
+Validation...........................
+Validation score: 0.9023805446138037
+Testing...........................
+Test score: 0.8992258683291087
+Classification report SVM default parameter.....................
+                 precision    recall  f1-score   support
+
+        absence       0.95      0.83      0.89      4297
+        cooking       0.96      0.95      0.96      1036
+    dishwashing       0.69      0.71      0.70       278
+         eating       0.64      0.89      0.75       340
+          other       0.34      0.71      0.46       202
+social_activity       0.91      0.97      0.94       908
+ vacuum_cleaner       1.00      1.00      1.00       201
+    watching_tv       1.00      1.00      1.00      3715
+        working       0.84      0.87      0.85      3620
+
+       accuracy                           0.90     14597
+      macro avg       0.81      0.88      0.84     14597
+   weighted avg       0.91      0.90      0.90     14597
+
+SVM optimized parameter..................................................
+# Tuning hyper-parameters for precision
+Train score for optimized: 0.9455309080555114
+Testing...........................
+Test score: 0.9134989256821204
+SVM best score= 0.9048518677427797
+SVM best estimator= SVC(C=10, gamma=0.1)
+Classification report SVM default parameter.....................
+                 precision    recall  f1-score   support
+
+        absence       0.96      0.89      0.92      4052
+        cooking       0.97      0.98      0.98      1017
+    dishwashing       0.79      0.79      0.79       287
+         eating       0.80      0.89      0.85       421
+          other       0.46      0.78      0.58       249
+social_activity       0.95      0.98      0.96       935
+ vacuum_cleaner       1.00      1.00      1.00       201
+    watching_tv       1.00      1.00      1.00      3718
+        working       0.90      0.91      0.90      3717
+
+       accuracy                           0.93     14597
+      macro avg       0.87      0.91      0.89     14597
+   weighted avg       0.94      0.93      0.93     14597
+
+# Tuning hyper-parameters for recall
+Train score for optimized: 0.9014599397060868
+Testing...........................
+Test score: 0.8698311867335524
+SVM best score= 0.8612993681015745
+SVM best estimator= SVC(C=10, gamma=0.1)
+Classification report SVM default parameter.....................
+                 precision    recall  f1-score   support
+
+        absence       0.96      0.89      0.92      4052
+        cooking       0.97      0.98      0.98      1017
+    dishwashing       0.79      0.79      0.79       287
+         eating       0.80      0.89      0.85       421
+          other       0.46      0.78      0.58       249
+social_activity       0.95      0.98      0.96       935
+ vacuum_cleaner       1.00      1.00      1.00       201
+    watching_tv       1.00      1.00      1.00      3718
+        working       0.90      0.91      0.90      3717
+
+       accuracy                           0.93     14597
+      macro avg       0.87      0.91      0.89     14597
+   weighted avg       0.94      0.93      0.93     14597
+

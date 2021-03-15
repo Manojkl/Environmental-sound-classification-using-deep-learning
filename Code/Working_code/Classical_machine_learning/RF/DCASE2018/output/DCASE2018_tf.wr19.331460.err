@@ -1,0 +1,11 @@
+[Parallel(n_jobs=-1)]: Using backend LokyBackend with 64 concurrent workers.
+[Parallel(n_jobs=-1)]: Done  72 tasks      | elapsed:  2.2min
+[Parallel(n_jobs=-1)]: Done 322 tasks      | elapsed:  9.3min
+[Parallel(n_jobs=-1)]: Done 672 tasks      | elapsed: 18.7min
+[Parallel(n_jobs=-1)]: Done 1122 tasks      | elapsed: 35.1min
+[Parallel(n_jobs=-1)]: Done 1672 tasks      | elapsed: 57.4min
+/home/mkolpe2s/anaconda3/envs/CNNLSTM/lib/python3.8/site-packages/joblib/externals/loky/process_executor.py:688: UserWarning: A worker stopped while some jobs were given to the executor. This can be caused by a too short worker timeout or by a memory leak.
+  warnings.warn(
+[Parallel(n_jobs=-1)]: Done 2322 tasks      | elapsed: 92.9min
+[Parallel(n_jobs=-1)]: Done 3072 tasks      | elapsed: 136.8min
+[Parallel(n_jobs=-1)]: Done 4000 out of 4000 | elapsed: 193.0min finished

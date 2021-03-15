@@ -1,0 +1,73 @@
+SVM default parameter..................................................
+Train score for default: 0.8716893342877595
+Validation...........................
+Validation score: 0.816034359341446
+Testing...........................
+Test score: 0.8288494562106469
+Classification report SVM default parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.90      0.82      0.86       221
+        car_horn       0.66      0.90      0.76        68
+children_playing       0.70      0.74      0.72       196
+        dog_bark       0.74      0.77      0.76       177
+        drilling       0.91      0.83      0.87       197
+   engine_idling       0.89      0.88      0.89       202
+        gun_shot       0.72      0.82      0.77        60
+      jackhammer       0.98      0.92      0.95       215
+           siren       0.85      0.91      0.88       185
+    street_music       0.78      0.73      0.76       226
+
+        accuracy                           0.83      1747
+       macro avg       0.81      0.83      0.82      1747
+    weighted avg       0.84      0.83      0.83      1747
+
+SVM optimized parameter..................................................
+# Tuning hyper-parameters for precision
+Train score for optimized: 0.9986479728740791
+Testing...........................
+Test score: 0.920209968683175
+SVM best score= 0.920450809400821
+SVM best estimator= SVC(C=10, gamma=1)
+Classification report SVM default parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.90      1.00      0.95       183
+        car_horn       0.34      1.00      0.51        32
+children_playing       0.79      0.95      0.87       174
+        dog_bark       0.98      0.37      0.54       483
+        drilling       0.77      0.98      0.86       142
+   engine_idling       0.94      1.00      0.97       187
+        gun_shot       0.69      0.98      0.81        48
+      jackhammer       0.91      0.99      0.95       185
+           siren       0.67      1.00      0.80       132
+    street_music       0.79      0.93      0.85       181
+
+        accuracy                           0.81      1747
+       macro avg       0.78      0.92      0.81      1747
+    weighted avg       0.86      0.81      0.79      1747
+
+# Tuning hyper-parameters for recall
+Train score for optimized: 0.9934425503716957
+Testing...........................
+Test score: 0.9317214502742903
+SVM best score= 0.9094545357257772
+SVM best estimator= SVC(C=10, gamma=0.1)
+Classification report SVM default parameter.....................
+                  precision    recall  f1-score   support
+
+ air_conditioner       0.98      0.98      0.98       204
+        car_horn       0.82      0.95      0.88        80
+children_playing       0.92      0.90      0.91       214
+        dog_bark       0.90      0.88      0.89       188
+        drilling       0.97      0.95      0.96       185
+   engine_idling       0.98      0.99      0.99       197
+        gun_shot       0.88      0.88      0.88        68
+      jackhammer       0.99      0.98      0.98       203
+           siren       0.96      0.96      0.96       198
+    street_music       0.92      0.92      0.92       210
+
+        accuracy                           0.94      1747
+       macro avg       0.93      0.94      0.93      1747
+    weighted avg       0.94      0.94      0.94      1747
+
