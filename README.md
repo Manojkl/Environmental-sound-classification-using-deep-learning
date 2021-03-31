@@ -1,5 +1,7 @@
 <div align="center">
 	<img src="https://github.com/Manojkl/Environmental-sound-classification-using-deep-learning/blob/master/VGGish_new.png" width="100%" height="100%">
+	<img src="https://github.com/Manojkl/Environmental-sound-classification-using-deep-learning/blob/master/US8K.png" width="100%" height="100%">
+	<img src="https://github.com/Manojkl/Environmental-sound-classification-using-deep-learning/blob/master/DCASE2018.png" width="100%" height="100%">
 </div>
 
 # Environmental sound classification using deep learning
